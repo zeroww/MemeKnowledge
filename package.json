@@ -1,0 +1,13 @@
+{
+  "name": "meme-world-wechat-game",
+  "version": "1.3.0",
+  "private": true,
+  "type": "module",
+  "description": "梗世界 · 微信小游戏答题 Demo",
+  "scripts": {
+    "test": "node tests/questions.test.mjs && node tests/core.test.mjs && node tests/app-smoke.test.mjs",
+    "test:questions": "node tests/questions.test.mjs",
+    "test:core": "node tests/core.test.mjs",
+    "test:smoke": "node tests/app-smoke.test.mjs"
+  }
+}

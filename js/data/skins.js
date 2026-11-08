@@ -1,0 +1,148 @@
+/**
+ * 6 款基础皮肤 / 主题。
+ * 皮肤只改变视觉，不提供任何答题优势。
+ */
+export const SKINS = [
+  {
+    id: 'default',
+    name: '默认',
+    price: 0,
+    emoji: '🎭',
+    desc: '黑、黄、红，梗世界标准配色',
+    theme: {
+      bgTop: '#0e0f12',
+      bgBottom: '#1b1d22',
+      primary: '#e13a2f',
+      primaryDeep: '#a91f18',
+      accent: '#f2c14e',
+      panel: '#17191e',
+      panelSoft: '#20232a',
+      text: '#f7f2e7',
+      muted: '#9a958a',
+      line: '#34363d',
+      success: '#2f9e68',
+      danger: '#e13a2f',
+      warning: '#f2c14e',
+    },
+  },
+  {
+    id: 'koi',
+    name: '锦鲤',
+    price: 800,
+    emoji: '🐟',
+    desc: '红金配色，转发这条锦鲤',
+    theme: {
+      bgTop: '#230b0b',
+      bgBottom: '#4a1510',
+      primary: '#ff7a3d',
+      primaryDeep: '#c24a1a',
+      accent: '#ffd166',
+      panel: '#2b1212',
+      panelSoft: '#3a1816',
+      text: '#fff5e6',
+      muted: '#c7a69a',
+      line: '#5a2a22',
+      success: '#44b07a',
+      danger: '#ff5a4e',
+      warning: '#ffd166',
+    },
+  },
+  {
+    id: 'dark',
+    name: '黑色幽默',
+    price: 1200,
+    emoji: '🖤',
+    desc: '深灰与红，笑中带泪',
+    theme: {
+      bgTop: '#0a0a0b',
+      bgBottom: '#18181b',
+      primary: '#d7d7d7',
+      primaryDeep: '#8a8a8a',
+      accent: '#e13a2f',
+      panel: '#141416',
+      panelSoft: '#1f1f23',
+      text: '#f2f2f2',
+      muted: '#8d8d93',
+      line: '#303036',
+      success: '#3fa875',
+      danger: '#e13a2f',
+      warning: '#f2c14e',
+    },
+  },
+  {
+    id: 'nerd',
+    name: '学霸',
+    price: 1600,
+    emoji: '📘',
+    desc: '蓝绿笔记格，知识点全对',
+    theme: {
+      bgTop: '#08141d',
+      bgBottom: '#0f2c36',
+      primary: '#2f9e8f',
+      primaryDeep: '#1d6b62',
+      accent: '#8fd3ff',
+      panel: '#0d2028',
+      panelSoft: '#12303a',
+      text: '#eefcff',
+      muted: '#8fb3bf',
+      line: '#1e4a56',
+      success: '#55c98b',
+      danger: '#ff6b5f',
+      warning: '#ffd166',
+    },
+  },
+  {
+    id: 'abstract',
+    name: '抽象面具',
+    price: 2200,
+    emoji: '🌀',
+    desc: '紫青几何，抽象到家',
+    theme: {
+      bgTop: '#130923',
+      bgBottom: '#2a1140',
+      primary: '#a855f7',
+      primaryDeep: '#6d28d9',
+      accent: '#22d3ee',
+      panel: '#1b0f2d',
+      panelSoft: '#26163d',
+      text: '#f6edff',
+      muted: '#a897bd',
+      line: '#3b2a55',
+      success: '#34d399',
+      danger: '#fb7185',
+      warning: '#fbbf24',
+    },
+  },
+  {
+    id: 'king',
+    name: '梗王',
+    price: 3000,
+    emoji: '👑',
+    desc: '金色王冠，梗界顶流',
+    theme: {
+      bgTop: '#151003',
+      bgBottom: '#2b1d05',
+      primary: '#f5c542',
+      primaryDeep: '#b8860b',
+      accent: '#ffffff',
+      panel: '#1e1706',
+      panelSoft: '#2c2109',
+      text: '#fff9e6',
+      muted: '#b8a77a',
+      line: '#4a3a12',
+      success: '#4fc38a',
+      danger: '#ff6257',
+      warning: '#f5c542',
+    },
+  },
+];
+
+export const DEFAULT_SKIN_ID = 'default';
+
+export function getSkin(skinId) {
+  return SKINS.find((skin) => skin.id === skinId) || SKINS[0];
+}
+
+export function getSkinIds() {
+  return SKINS.map((skin) => skin.id);
+}

@@ -1,0 +1,289 @@
+/**
+ * 剧情关卡定义。
+ * 第一至第三章已实现；第四章「图书馆」在地图中预留节点，当前仍为未开放。
+ */
+export const STORY_ASSETS = {
+  background: 'assets/story/background1.jpg',
+  map: 'assets/story/map.jpg',
+  heroes: [
+    'assets/story/role1-hp3.png',
+    'assets/story/role1-hp2.png',
+    'assets/story/role1-hp1.png',
+  ],
+};
+
+/**
+ * 剧情专属题池：从 150 道内置题中按主题挑选，仍然沿用 3/4/3 与 BOSS 规则。
+ * 题池不足时 sampler 会自动回退到全题库，保证始终可以开局。
+ */
+const LEVEL2_QUESTION_POOL = [
+  // 易：干饭
+  'q_mw_0003',
+  'q_mw_0044',
+  'q_mw_0084',
+  'q_mw_0114',
+  // 中：真香、搭子、雪糕刺客
+  'q_mw_0015',
+  'q_mw_0018',
+  'q_mw_0050',
+  'q_mw_0062',
+  'q_mw_0102',
+  'q_mw_0138',
+  // 难：电子榨菜、没苦硬吃、BOSS「干就完了」
+  'q_mw_0150',
+  'q_mw_0026',
+  'q_mw_0071',
+];
+
+const LEVEL3_QUESTION_POOL = [
+  // 易：早八、打工人、摸鱼、内卷、摆烂
+  'q_mw_0009',
+  'q_mw_0045',
+  'q_mw_0085',
+  'q_mw_0115',
+  'q_mw_0117',
+  'q_mw_0118',
+  // 中：内卷、复读机、班味、松弛感、格局、急了
+  'q_mw_0013',
+  'q_mw_0053',
+  'q_mw_0056',
+  'q_mw_0058',
+  'q_mw_0061',
+  'q_mw_0092',
+  'q_mw_0099',
+  // 难：早八、city 不 city，以及 BOSS「吗喽」「脆皮大学生」
+  'q_mw_0147',
+  'q_mw_0110',
+  'q_mw_0104',
+  'q_mw_0142',
+];
+
+export const LEVELS = [
+  {
+    id: 1,
+    chapter: '第一章',
+    name: '宿舍',
+    title: '第一章 · 宿舍',
+    subtitle: '室友嘉豪的十道梗知识考验',
+    available: true,
+    status: '可挑战',
+    mapLabel: '宿舍',
+    mapNode: { x: 0.111, y: 0.347 },
+    nextId: 2,
+    requires: null,
+    speaker: '嘉豪',
+    background: STORY_ASSETS.background,
+    portrait: 'assets/story/role0.png',
+    portraitAspect: 337 / 820,
+    ask: 'assets/story/role0-1.png',
+    askAspect: 639 / 598,
+    heroes: STORY_ASSETS.heroes,
+    questionPool: null,
+    description: '室友嘉豪正在宿舍等你。准备好接受 10 道梗知识考验了吗？',
+    unlockHint: '',
+  },
+  {
+    id: 2,
+    chapter: '第二章',
+    name: '食堂',
+    title: '第二章 · 食堂',
+    subtitle: '芬姨的干饭暗号考验',
+    available: true,
+    status: '可挑战',
+    mapLabel: '食堂',
+    mapNode: { x: 0.365, y: 0.246 },
+    nextId: 3,
+    requires: 1,
+    speaker: '芬姨',
+    background: 'assets/story/background2.jpg',
+    portrait: 'assets/story/role2.png',
+    portraitAspect: 408 / 680,
+    ask: 'assets/story/role2-1.png',
+    askAspect: 560 / 434,
+    heroes: STORY_ASSETS.heroes,
+    questionPool: LEVEL2_QUESTION_POOL,
+    description: '食堂窗口后，芬姨的勺子停在半空。想打饭，先接住她的干饭暗号。',
+    unlockHint: '先完成第一章「宿舍」，才能进入食堂。',
+  },
+  {
+    id: 3,
+    chapter: '第三章',
+    name: '教室',
+    title: '第三章 · 教室',
+    subtitle: '李老师的随堂梗测验',
+    available: true,
+    status: '可挑战',
+    mapLabel: '教学楼',
+    mapNode: { x: 0.61, y: 0.142 },
+    nextId: 4,
+    requires: 2,
+    speaker: '李老师',
+    background: 'assets/story/background3.jpg',
+    portrait: 'assets/story/role3.png',
+    portraitAspect: 359 / 680,
+    ask: 'assets/story/role3-1.png',
+    askAspect: 560 / 464,
+    heroes: STORY_ASSETS.heroes,
+    questionPool: LEVEL3_QUESTION_POOL,
+    description: '教学楼的灯还亮着。李老师把粉笔放下，这堂课只考梗知识。',
+    unlockHint: '先完成第二章「食堂」，才能进入教学楼。',
+  },
+  {
+    id: 4,
+    chapter: '第四章',
+    name: '图书馆',
+    title: '第四章 · 图书馆',
+    subtitle: '隐藏章节',
+    available: false,
+    status: '未开放',
+    mapLabel: '图书馆',
+    mapNode: { x: 0.897, y: 0.251 },
+    nextId: null,
+    requires: 3,
+    speaker: '？',
+    questionPool: null,
+    description: '隐藏章节，暂未开放。',
+    unlockHint: '先完成第三章「教室」。',
+  },
+];
+
+export const STORY_PREMISE = [
+  '你穿越到了一个靠梗知识生存的世界。',
+  '这里的人用梗交流；接不住梗的人，会被世界淘汰。',
+  '宿舍的嘉豪、食堂的芬姨、教室的李老师，都在等你接招。',
+  '活过三关，才能找到回去的路。',
+];
+
+export const LEVEL1_INTRO = [
+  {
+    speaker: '旁白',
+    text: '你睁开眼，发现自己躺在一间陌生的大学宿舍里。窗外是陌生的校园，手机里没有任何熟悉的联系人。',
+  },
+  {
+    speaker: '旁白',
+    text: '你正准备推门出去了解这个世界，身后的室友突然叫住了你。',
+  },
+  {
+    speaker: '嘉豪',
+    text: '新来的？先别急着走。在这个世界，接不住梗的人会死。',
+  },
+  {
+    speaker: '你',
+    text: '等等……这里到底是什么地方？我为什么会在这里？',
+  },
+  {
+    speaker: '嘉豪',
+    text: '回答我 10 个问题。答对了，你就能活着走出这间宿舍。',
+  },
+];
+
+export const LEVEL2_INTRO = [
+  {
+    speaker: '旁白',
+    text: '你走出宿舍，顺着饭香来到大学食堂。窗口前排着长队，却安静得有些反常。',
+  },
+  {
+    speaker: '旁白',
+    text: '你端起餐盘，刚要开口点菜，打饭阿姨的勺子停在了半空。',
+  },
+  {
+    speaker: '芬姨',
+    text: '新面孔？在这个食堂，光有饭卡不够，还得接得住梗。',
+  },
+  {
+    speaker: '你',
+    text: '阿姨，我只是想打份饭……',
+  },
+  {
+    speaker: '芬姨',
+    text: '打饭先答话。十道题，三次机会；每答错一题，勺子里就少一块肉。',
+  },
+  {
+    speaker: '你',
+    text: '这食堂的规矩，比宿舍还离谱。',
+  },
+  {
+    speaker: '芬姨',
+    text: '少废话。答对了，鸡腿管够；接不住，今天就饿着出去。',
+  },
+];
+
+export const LEVEL3_INTRO = [
+  {
+    speaker: '旁白',
+    text: '你捧着餐盘冲出食堂，教学楼里空无一人，只有走廊尽头那间教室还亮着灯。',
+  },
+  {
+    speaker: '旁白',
+    text: '黑板前站着一位老师，粉笔停在半空，像是在等你很久了。',
+  },
+  {
+    speaker: '李老师',
+    text: '迟到十分钟。看来食堂的考验没难住你。',
+  },
+  {
+    speaker: '你',
+    text: '你知道我为什么会来到这里？',
+  },
+  {
+    speaker: '李老师',
+    text: '我知道怎么让你回去。但先通过这堂随堂测验。',
+  },
+  {
+    speaker: '李老师',
+    text: '十道题，三次机会。答错三次，这节课就永远下课。',
+  },
+  {
+    speaker: '你',
+    text: '……这学校的老师，怎么比室友还不讲道理。',
+  },
+  {
+    speaker: '李老师',
+    text: '开始吧，同学。记住，梗是这个世界唯一的通行证。',
+  },
+];
+
+export function getLevelById(id) {
+  return LEVELS.find((level) => level.id === Number(id)) || null;
+}
+
+export function getNextLevel(levelId) {
+  const level = getLevelById(levelId);
+  return level && level.nextId ? getLevelById(level.nextId) : null;
+}
+
+export function getLevelIntro(levelId) {
+  const id = Number(levelId);
+  if (id === 1) return LEVEL1_INTRO;
+  if (id === 2) return LEVEL2_INTRO;
+  if (id === 3) return LEVEL3_INTRO;
+  return [
+    {
+      speaker: '旁白',
+      text: '这一章的剧情正在开发中，敬请期待。',
+    },
+  ];
+}
+
+/**
+ * 关卡是否解锁：关卡必须已开放，且前置章节已完成。
+ */
+export function isLevelUnlocked(levelId, story) {
+  const level = getLevelById(levelId);
+  if (!level || !level.available) return false;
+  if (!level.requires) return true;
+  return !!(story && story.completedLevels && story.completedLevels[Number(level.requires)]);
+}
+
+/**
+ * 地图上展示的关卡状态。
+ */
+export function getLevelStatus(levelId, story) {
+  const level = getLevelById(levelId);
+  if (!level) return '未开放';
+  const completed = !!(story && story.completedLevels && story.completedLevels[level.id]);
+  if (completed) return '已通关';
+  if (!level.available) return level.status || '未开放';
+  if (!isLevelUnlocked(level.id, story)) return '未解锁';
+  return '可挑战';
+}

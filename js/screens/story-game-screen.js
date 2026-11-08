@@ -1,0 +1,477 @@
+import { RUN_PHASE } from '../core/types.js';
+import { getLevelById } from '../data/levels.js';
+import {
+  CONTENT_X,
+  CONTENT_WIDTH,
+  RIGHT_SAFE_X,
+  SAFE_BOTTOM,
+  SAFE_TOP,
+  SCREEN_HEIGHT,
+  SCREEN_WIDTH,
+  ctx as measureCtx,
+  sz,
+} from '../render.js';
+import {
+  drawImageContain,
+  drawImageCover,
+  loadImage,
+} from '../services/assets.js';
+import {
+  clamp,
+  drawGlassPanel,
+  drawPill,
+  drawText,
+  fillRoundRect,
+  font,
+  hexToRgba,
+  wrapText,
+} from '../ui/draw.js';
+import { renderLives } from '../ui/life-bar.js';
+import { renderStoryBubble } from '../ui/story-bubble.js';
+import GameScreen from './game-screen.js';
+
+/**
+ * 剧情关卡答题界面：当前章节背景 + 透明对手提问像 + 新对话气泡 + 2×2 选项。
+ * 复用 GameScreen 的规则与弹窗逻辑。
+ */
+export default class StoryGameScreen extends GameScreen {
+  constructor(app) {
+    super(app);
+    this.level = null;
+    this.opponentName = '';
+    this.backgroundImage = null;
+    this.opponentAskImage = null;
+    this.heroImages = [];
+  }
+
+  onEnter() {
+    const run = this.params && this.params.run;
+    this.level = getLevelById(run && run.levelId ? run.levelId : 1) || getLevelById(1);
+    this.opponentName = (this.level && this.level.speaker) || '？？？';
+    this.backgroundImage = loadImage(this.level && this.level.background);
+    this.opponentAskImage = loadImage(
+      this.level && (this.level.ask || this.level.portrait)
+    );
+    this.heroImages = ((this.level && this.level.heroes) || []).map((src) => loadImage(src));
+    super.onEnter();
+  }
+
+  rebuildLayout() {
+    if (!this.run) return;
+    const question = this.run.currentQuestion;
+    if (!question) return;
+
+    const x = CONTENT_X + sz(12);
+    const w = CONTENT_WIDTH - sz(24);
+    const top = SAFE_TOP + sz(10);
+    const compact = SCREEN_HEIGHT < 700;
+    const hudBottom = top + (compact ? sz(54) : sz(60));
+    const actionH = compact ? sz(38) : sz(42);
+    const actionTop = SCREEN_HEIGHT - SAFE_BOTTOM - sz(12) - actionH;
+
+    const optionCount = Math.max(1, this.optionCards.length);
+    const cols = optionCount <= 2 ? optionCount : 2;
+    const rows = Math.ceil(optionCount / cols);
+    const gap = sz(6);
+    const colGap = sz(7);
+    const cardH = compact
+      ? rows > 1
+        ? sz(44)
+        : sz(52)
+      : rows > 1
+        ? sz(52)
+        : sz(58);
+    const cardW = (w - colGap * (cols - 1)) / cols;
+    const optionsTotal = rows * cardH + (rows - 1) * gap;
+    const optionsBottom = actionTop - sz(8);
+    const optionsTop = optionsBottom - optionsTotal;
+
+    this.optionRects = [];
+    this.optionCards.forEach((card, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const cardX = x + col * (cardW + colGap);
+      const cardY = optionsTop + row * (cardH + gap);
+      card.setRect(cardX, cardY, cardW, cardH);
+      this.optionRects.push({ x: cardX, y: cardY, w: cardW, h: cardH, card });
+    });
+
+    const bubbleH = compact ? sz(132) : sz(150);
+    const bubbleY = optionsTop - bubbleH - sz(8);
+    const bubbleRect = { x, y: bubbleY, w, h: bubbleH };
+
+    const heroH = compact ? sz(230) : sz(240);
+    const heroW = heroH * 0.5;
+    const heroRect = {
+      x: x + sz(4),
+      y: bubbleY + sz(28) - heroH,
+      w: heroW,
+      h: heroH,
+    };
+
+    const opponentH = compact ? sz(180) : sz(210);
+    const askAspect = this.level && this.level.askAspect ? this.level.askAspect : 639 / 598;
+    const opponentW = opponentH * askAspect;
+    const opponentRect = {
+      x: x + w - opponentW - sz(4),
+      y: bubbleY + sz(28) - opponentH,
+      w: opponentW,
+      h: opponentH,
+    };
+
+    this.timerRing.setCenter(RIGHT_SAFE_X - sz(28), top + sz(28), sz(22));
+    this.pauseButton.setRect(x, top, sz(32), sz(32));
+
+    this.layout = {
+      x,
+      w,
+      top,
+      compact,
+      hudBottom,
+      actionTop,
+      actionH,
+      optionsTop,
+      optionsBottom,
+      cardH,
+      cardW,
+      cols,
+      rows,
+      gap,
+      colGap,
+      bubbleRect,
+      heroRect,
+      opponentRect,
+      question,
+      level: this.level,
+    };
+
+    this.updateActionButtons();
+  }
+
+  getHeroFrame(lives = this.run ? this.run.lives : 3) {
+    const hp = clamp(lives, 0, 3);
+    return hp >= 3 ? 0 : hp === 2 ? 1 : 2;
+  }
+
+  render(ctx) {
+    if (!this.run || !this.layout) return;
+    const theme = this.theme;
+    const now = Date.now();
+    const shakePower = now < this.shakeUntil ? (this.shakeUntil - now) / 320 : 0;
+
+    if (
+      !drawImageCover(ctx, this.backgroundImage, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0)
+    ) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+      gradient.addColorStop(0, theme.bgTop);
+      gradient.addColorStop(1, theme.bgBottom);
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+
+    const overlay = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    overlay.addColorStop(0, 'rgba(7, 9, 13, 0.5)');
+    overlay.addColorStop(0.55, 'rgba(7, 9, 13, 0.6)');
+    overlay.addColorStop(1, 'rgba(7, 9, 13, 0.9)');
+    ctx.fillStyle = overlay;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    ctx.save();
+    if (shakePower > 0) {
+      ctx.translate(
+        Math.sin(this.time * 90) * sz(4) * shakePower,
+        Math.cos(this.time * 70) * sz(3) * shakePower
+      );
+    }
+
+    this.renderStoryHud(ctx, theme);
+    this.renderCharacters(ctx, theme);
+    this.renderQuestionBubble(ctx, theme);
+    for (const card of this.optionCards) card.render(ctx, theme);
+    this.renderActionRow(ctx, theme);
+    this.renderFloaters(ctx);
+    ctx.restore();
+
+    if (now < this.flashUntil) {
+      const alpha = clamp((this.flashUntil - now) / 260, 0, 1) * 0.26;
+      ctx.fillStyle = hexToRgba(theme.danger, alpha);
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
+
+    this.renderFeedback(ctx, theme);
+    this.modal.render(ctx, theme);
+  }
+
+  renderStoryHud(ctx, theme) {
+    const { x, w, top, hudBottom } = this.layout;
+
+    this.pauseButton.render(ctx, theme);
+
+    drawText(ctx, this.level ? this.level.title : '剧情关卡', x + sz(40), top + sz(6), {
+      font: font(sz(12), '800'),
+      color: '#ffffff',
+      baseline: 'top',
+    });
+    drawText(
+      ctx,
+      `题目 ${this.run.index + 1} / ${this.run.totalQuestions}`,
+      x + sz(40),
+      top + sz(25),
+      {
+        font: font(sz(10), '600'),
+        color: 'rgba(255,255,255,0.72)',
+        baseline: 'top',
+      }
+    );
+
+    const barX = x + sz(40);
+    const barY = hudBottom - sz(10);
+    const barW = Math.min(sz(150), w * 0.42);
+    fillRoundRect(ctx, barX, barY, barW, sz(3), sz(2), 'rgba(255,255,255,0.18)');
+    fillRoundRect(
+      ctx,
+      barX,
+      barY,
+      Math.max(sz(3), (barW * (this.run.index + 1)) / this.run.totalQuestions),
+      sz(3),
+      sz(2),
+      theme.accent
+    );
+
+    this.timerRing.render(ctx, theme, this.remainingSec, this.totalSec, this.time);
+    drawText(ctx, `得分 ${this.run.score}`, RIGHT_SAFE_X - sz(28), top + sz(54), {
+      font: font(sz(10), '700'),
+      color: theme.accent,
+      align: 'center',
+      baseline: 'middle',
+    });
+  }
+
+  renderCharacters(ctx, theme) {
+    const { heroRect, opponentRect } = this.layout;
+
+    // 当前章节对手：透明提问半身像
+    if (
+      !drawImageContain(
+        ctx,
+        this.opponentAskImage,
+        opponentRect.x,
+        opponentRect.y,
+        opponentRect.w,
+        opponentRect.h,
+        0
+      )
+    ) {
+      drawText(
+        ctx,
+        this.opponentName,
+        opponentRect.x + opponentRect.w / 2,
+        opponentRect.y + opponentRect.h / 2,
+        {
+          font: font(sz(12), '600'),
+          color: 'rgba(255,255,255,0.45)',
+          align: 'center',
+          baseline: 'middle',
+        }
+      );
+    }
+
+    // 主角：放大后的透明立绘，按血量切换
+    const lives = clamp(this.run.lives, 0, 3);
+    const frame = this.getHeroFrame(lives);
+    const heroImage = this.heroImages[frame];
+    if (
+      !drawImageContain(ctx, heroImage, heroRect.x, heroRect.y, heroRect.w, heroRect.h, 0)
+    ) {
+      drawText(ctx, '你', heroRect.x + heroRect.w / 2, heroRect.y + heroRect.h / 2, {
+        font: font(sz(12), '600'),
+        color: 'rgba(255,255,255,0.45)',
+        align: 'center',
+        baseline: 'middle',
+      });
+    }
+
+    const heartSize = sz(7);
+    const heartGap = sz(2);
+    const heartsW = 3 * (heartSize * 1.45 + heartGap);
+    renderLives(
+      ctx,
+      heroRect.x + Math.max(0, (heroRect.w - heartsW) / 2),
+      heroRect.y - sz(8),
+      lives,
+      3,
+      theme,
+      heartSize,
+      heartGap
+    );
+  }
+
+  renderQuestionBubble(ctx, theme) {
+    const { bubbleRect, question } = this.layout;
+    const content = renderStoryBubble(
+      ctx,
+      theme,
+      bubbleRect.x,
+      bubbleRect.y,
+      bubbleRect.w,
+      bubbleRect.h,
+      { speaker: this.opponentName, showTail: true, showName: true }
+    );
+
+    if (question.isBoss) {
+      drawPill(ctx, 'BOSS · 双倍', bubbleRect.x + sz(64), bubbleRect.y + sz(18), {
+        fontStr: font(sz(8), '800'),
+        color: '#ffffff',
+        bg: hexToRgba(theme.danger, 0.92),
+        height: sz(17),
+        padX: sz(7),
+      });
+    }
+
+    const fontSize = clamp(content.w * 0.05, sz(11.5), sz(14.5));
+    const lineHeight = fontSize * 1.42;
+    const isImage = question.type === 'image' && question.visual;
+    const visualH = isImage ? Math.min(sz(42), content.h * 0.4) : 0;
+    const hasHint = !!this.hintText;
+    const hintH = hasHint ? Math.min(sz(40), content.h * 0.36) : 0;
+    const maxLines = Math.max(
+      1,
+      Math.floor((content.h - visualH - hintH - sz(4)) / lineHeight)
+    );
+
+    measureCtx.font = font(fontSize, '700');
+    const lines = wrapText(measureCtx, question.stem, content.w, maxLines);
+    ctx.font = font(fontSize, '700');
+    ctx.fillStyle = '#f7f2e7';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    lines.forEach((line, index) => {
+      ctx.fillText(line, content.x, content.y + index * lineHeight);
+    });
+
+    if (hasHint) {
+      const hintY = content.y + content.h - hintH;
+      fillRoundRect(ctx, content.x, hintY, content.w, hintH, sz(6), 'rgba(225, 58, 47, 0.14)');
+      ctx.fillStyle = hexToRgba(theme.danger, 0.8);
+      ctx.fillRect(content.x, hintY + sz(4), sz(2), hintH - sz(8));
+      drawText(ctx, '提示', content.x + sz(7), hintY + sz(4), {
+        font: font(sz(8), '800'),
+        color: theme.danger,
+        baseline: 'top',
+      });
+      const hintFont = Math.max(8, fontSize * 0.8);
+      measureCtx.font = font(hintFont, '500');
+      const hintLines = wrapText(
+        measureCtx,
+        this.hintText,
+        content.w - sz(14),
+        Math.max(1, Math.floor((hintH - sz(14)) / (hintFont * 1.3)))
+      );
+      ctx.font = font(hintFont, '500');
+      ctx.fillStyle = 'rgba(247,242,231,0.78)';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      hintLines.forEach((line, index) => {
+        ctx.fillText(line, content.x + sz(7), hintY + sz(14) + index * hintFont * 1.3);
+      });
+    }
+
+    if (isImage) {
+      const visualY = content.y + content.h - visualH;
+      fillRoundRect(ctx, content.x, visualY, content.w, visualH, sz(6), 'rgba(255,255,255,0.06)');
+      const visual = question.visual;
+      const emojiSize = Math.min(sz(24), content.w * 0.08);
+      const emojis = visual.emojis && visual.emojis.length ? visual.emojis : ['🎭'];
+      ctx.font = font(emojiSize, '400');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      emojis.forEach((emoji, index) => {
+        const px =
+          emojis.length === 1
+            ? content.x + content.w / 2
+            : content.x + sz(12) + ((content.w - sz(24)) / Math.max(1, emojis.length - 1)) * index;
+        ctx.fillText(emoji, px, visualY + visualH * 0.4);
+      });
+      if (visual.caption) {
+        ctx.font = font(Math.max(8, fontSize * 0.7), '500');
+        ctx.fillStyle = 'rgba(247,242,231,0.6)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(visual.caption, content.x + content.w / 2, visualY + visualH * 0.76);
+      }
+    }
+  }
+
+  /**
+   * 剧情反馈面板覆盖在问题气泡上，选项颜色保持可见。
+   */
+  renderFeedback(ctx, theme) {
+    if (!this.feedback) return;
+    const { bubbleRect } = this.layout;
+    const isCorrect = this.feedback.correct;
+    const title = isCorrect ? '答对了！' : this.feedback.timeout ? '超时了' : '答错了';
+    const color = isCorrect ? theme.success : theme.danger;
+
+    drawGlassPanel(
+      ctx,
+      bubbleRect.x,
+      bubbleRect.y,
+      bubbleRect.w,
+      bubbleRect.h,
+      sz(16),
+      theme,
+      0.97
+    );
+    ctx.fillStyle = hexToRgba(color, 0.24);
+    ctx.fillRect(bubbleRect.x, bubbleRect.y, sz(4), bubbleRect.h);
+
+    drawText(ctx, title, bubbleRect.x + sz(16), bubbleRect.y + sz(14), {
+      font: font(sz(17), '800'),
+      color,
+      baseline: 'top',
+    });
+    if (isCorrect) {
+      drawText(ctx, `+${this.feedback.gained || 0} 分`, bubbleRect.x + bubbleRect.w - sz(16), bubbleRect.y + sz(16), {
+        font: font(sz(13), '800'),
+        color: theme.accent,
+        align: 'right',
+        baseline: 'top',
+      });
+    } else {
+      drawText(ctx, `正确答案：${this.feedback.answerText}`, bubbleRect.x + sz(16), bubbleRect.y + sz(38), {
+        font: font(sz(11), '700'),
+        color: theme.text,
+        baseline: 'top',
+      });
+    }
+
+    measureCtx.font = font(sz(11), '400');
+    const explanationLines = wrapText(
+      measureCtx,
+      this.feedback.explanation || '',
+      bubbleRect.w - sz(32),
+      2
+    );
+    ctx.font = font(sz(11), '400');
+    ctx.fillStyle = hexToRgba(theme.text, 0.82);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    const explanationTop = isCorrect ? bubbleRect.y + sz(38) : bubbleRect.y + sz(58);
+    explanationLines.forEach((line, index) => {
+      ctx.fillText(line, bubbleRect.x + sz(16), explanationTop + index * sz(16));
+    });
+
+    const footer =
+      this.run.status === RUN_PHASE.DEAD
+        ? '生命值耗尽'
+        : this.run.status === RUN_PHASE.FINISHED
+          ? '点击进入结算'
+          : '点击继续';
+    drawText(ctx, footer, bubbleRect.x + bubbleRect.w - sz(16), bubbleRect.y + bubbleRect.h - sz(12), {
+      font: font(sz(10), '600'),
+      color: hexToRgba(theme.muted, 0.95),
+      align: 'right',
+      baseline: 'bottom',
+    });
+  }
+}
