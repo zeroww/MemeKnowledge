@@ -1,6 +1,18 @@
 import { ctx as measureCtx, SCREEN_HEIGHT, SCREEN_WIDTH, sz } from '../render.js';
 import Button from './button.js';
-import { fillRoundRect, font, hexToRgba, strokeRoundRect, wrapText } from './draw.js';
+import { drawIcon } from './icons.js';
+import {
+  clamp,
+  drawText,
+  drawTopSheen,
+  easeOutCubic,
+  fillCircle,
+  fillRoundRectGradient,
+  font,
+  hexToRgba,
+  strokeRoundRect,
+  wrapText,
+} from './draw.js';
 
 /**
  * 通用 Canvas 弹窗：标题 + 多行说明 + 1～3 个按钮。
@@ -20,6 +32,7 @@ export default class Modal {
     this.contentW = 0;
     this.panel = { x: 0, y: 0, w: 0, h: 0 };
     this.onClose = null;
+    this.shownAt = 0;
   }
 
   isVisible() {
@@ -31,14 +44,17 @@ export default class Modal {
     this.title = options.title || '';
     this.message = options.message || '';
     this.tone = options.tone || 'default';
+    this.iconName = options.icon || '';
     this.onClose = options.onClose || null;
     this.pressed = null;
+    this.shownAt = Date.now();
 
     this.buttons = (options.buttons || []).map((definition) => {
       return new Button({
         label: definition.label || '',
         subLabel: definition.subLabel || '',
         icon: definition.icon || '',
+        iconName: definition.iconName || '',
         style: definition.style || 'secondary',
         disabled: !!definition.disabled,
         onClick: () => {
@@ -64,7 +80,8 @@ export default class Modal {
     const titleFont = font(sz(20), '800');
     const messageFont = font(sz(14), '400');
     const lineHeight = sz(21);
-    const buttonHeight = this.buttons.length > 2 ? sz(46) : sz(48);
+    const hasSubLabel = this.buttons.some((button) => !!button.subLabel);
+    const buttonHeight = hasSubLabel ? sz(54) : this.buttons.length > 2 ? sz(46) : sz(48);
     const buttonGap = sz(10);
     const buttonsHeight =
       this.buttons.length === 0
@@ -147,28 +164,85 @@ export default class Modal {
   render(ctx, theme) {
     if (!this.visible) return;
 
+    const entrance = clamp((Date.now() - this.shownAt) / 190, 0, 1);
+    const eased = easeOutCubic(entrance);
+    const { x, y, w, h } = this.panel;
+    const toneColor = this.tone === 'danger' ? theme.danger : theme.accent;
+
     ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.74)';
+    ctx.fillStyle = 'rgba(24, 58, 96, 0.42)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    const { x, y, w, h } = this.panel;
-    const border = this.tone === 'danger' ? theme.danger : theme.line;
-    fillRoundRect(ctx, x, y, w, h, sz(20), hexToRgba(theme.panel, 0.99));
-    strokeRoundRect(ctx, x, y, w, h, sz(20), border, 1.5);
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    ctx.translate(cx, cy);
+    ctx.scale(0.94 + eased * 0.06, 0.94 + eased * 0.06);
+    ctx.translate(-cx, -cy);
+    ctx.globalAlpha = eased;
 
-    // 顶部强调条
-    const accentW = sz(46);
-    fillRoundRect(
+    ctx.save();
+    ctx.shadowColor = 'rgba(30, 70, 120, 0.32)';
+    ctx.shadowBlur = sz(28);
+    ctx.shadowOffsetY = sz(12);
+    fillRoundRectGradient(
       ctx,
-      x + w / 2 - accentW / 2,
-      y + sz(10),
-      accentW,
-      sz(3),
-      sz(2),
-      this.tone === 'danger' ? theme.danger : theme.accent
+      x,
+      y,
+      w,
+      h,
+      sz(26),
+      '#ffffff',
+      '#eefbff'
     );
+    ctx.restore();
+    drawTopSheen(ctx, x, y, w, h, sz(26), 0.5);
+    strokeRoundRect(ctx, x, y, w, h, sz(26), '#bfe4f8', 1.8);
 
-    let cursorY = y + sz(22);
+    // 顶部悬浮图标
+    if (this.iconName) {
+      drawIcon(ctx, this.iconName, cx, y + sz(2), sz(44));
+    } else if (this.tone === 'pause') {
+      drawIcon(ctx, 'pause', cx, y + sz(2), sz(44));
+    } else {
+      ctx.save();
+      ctx.shadowColor = hexToRgba(toneColor, 0.5);
+      ctx.shadowBlur = sz(18);
+      ctx.shadowOffsetY = sz(4);
+      const iconGradient = ctx.createLinearGradient(cx, y - sz(24), cx, y + sz(24));
+      iconGradient.addColorStop(0, this.tone === 'danger' ? '#ff9d8f' : '#ffd970');
+      iconGradient.addColorStop(1, this.tone === 'danger' ? '#e8453a' : '#ffb400');
+      fillCircle(ctx, cx, y + sz(2), sz(22), iconGradient);
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, y + sz(2), sz(22), 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = sz(2);
+      ctx.stroke();
+      ctx.restore();
+      if (this.tone === 'danger') {
+        drawText(ctx, '!', cx, y + sz(2), {
+          font: font(sz(22), '900'),
+          color: '#ffffff',
+          align: 'center',
+          baseline: 'middle',
+        });
+      } else {
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = sz(3.4);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx - sz(8), y + sz(2));
+        ctx.lineTo(cx - sz(2), y + sz(8));
+        ctx.lineTo(cx + sz(9), y - sz(5));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    let cursorY = y + sz(30);
     if (this.titleLines.length) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
@@ -181,7 +255,10 @@ export default class Modal {
     }
 
     if (this.messageLines.length) {
-      const messageColor = this.tone === 'danger' ? hexToRgba(theme.text, 0.92) : theme.muted;
+      const messageColor =
+        this.tone === 'danger'
+          ? hexToRgba(theme.text, 0.88)
+          : hexToRgba(theme.text, 0.72);
       ctx.font = this.messageFont;
       ctx.fillStyle = messageColor;
       ctx.textAlign = 'center';

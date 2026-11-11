@@ -5,7 +5,6 @@ import DataBus from './databus.js';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './render.js';
 import Background from './runtime/background.js';
 import CollectionScreen from './screens/collection-screen.js';
-import DailyScreen from './screens/daily-screen.js';
 import GameScreen from './screens/game-screen.js';
 import HomeScreen from './screens/home-screen.js';
 import LeaderboardScreen from './screens/leaderboard-screen.js';
@@ -27,7 +26,6 @@ import MockAdOverlay from './ui/mock-ad-overlay.js';
 import Toast from './ui/toast.js';
 
 const MODE_CLASSIC = 'classic';
-const MODE_DAILY = 'daily';
 
 export default class Main {
   constructor() {
@@ -81,7 +79,6 @@ export default class Main {
       result: new ResultScreen(this),
       collection: new CollectionScreen(this),
       leaderboard: new LeaderboardScreen(this),
-      daily: new DailyScreen(this),
       shop: new ShopScreen(this),
       settings: new SettingsScreen(this),
     };
@@ -273,58 +270,6 @@ export default class Main {
     });
     this.audio.play('click');
     this.showScreen('storyGame', { run: result.run, levelId: level.id });
-  }
-
-  async startDailyRun() {
-    const daily = this.databus.ensureDaily();
-    let questionIds = daily.questionIds;
-    if (!questionIds || questionIds.length !== 10) {
-      questionIds = api.createDailyQuestionIds(daily.dateKey);
-      this.databus.setDailyQuestionIds(questionIds);
-    }
-
-    const result = await api.startRun({
-      mode: MODE_DAILY,
-      profile: this.profile,
-      questionIds,
-    });
-    if (!result.ok) {
-      this.toast.show('每日挑战开局失败');
-      return;
-    }
-
-    this.databus.setRun(result.run);
-    this.databus.clearSnapshot();
-    this.analytics.track('run_start', {
-      mode: MODE_DAILY,
-      runId: result.run.id,
-      questionIds: result.run.questionIds,
-      dateKey: daily.dateKey,
-    });
-    this.audio.play('click');
-    this.showScreen('game', { run: result.run });
-  }
-
-  async requestDailyRun() {
-    const daily = this.databus.getDailyInfo();
-    if (daily.freeAvailable) {
-      this.databus.markDailyAttempt('free');
-      this.analytics.track('daily_start', { dateKey: daily.dateKey, attempt: 1 });
-      this.startDailyRun();
-      return;
-    }
-    if (daily.adAvailable) {
-      const result = await this.adManager.showDailyRetry({ profile: this.profile });
-      if (!result.ok) {
-        this.toast.show('完整观看广告后才能再挑战');
-        return;
-      }
-      this.databus.markDailyAttempt('ad');
-      this.analytics.track('daily_start', { dateKey: daily.dateKey, attempt: 2 });
-      this.startDailyRun();
-      return;
-    }
-    this.toast.show('今日挑战次数已用完');
   }
 
   resumeRun() {

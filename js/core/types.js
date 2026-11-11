@@ -93,7 +93,6 @@ export const AD_PLACEMENT = Object.freeze({
   HINT: 'hint',
   EXTEND: 'extend',
   DOUBLE: 'double',
-  DAILY: 'daily',
   INTERSTITIAL: 'interstitial',
 });
 
@@ -110,4 +109,4 @@ export const STORAGE_KEYS = Object.freeze({
 });
 
 export const BANK_VERSION = 1;
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.5.0';

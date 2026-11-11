@@ -1,5 +1,13 @@
 import { sz } from '../render.js';
-import { drawPill, fillRoundRect, font, hexToRgba, strokeRoundRect } from './draw.js';
+import {
+  drawPill,
+  drawTopSheen,
+  fillRoundRect,
+  fillRoundRectGradient,
+  font,
+  hexToRgba,
+  strokeRoundRect,
+} from './draw.js';
 
 /**
  * 剧情对话气泡。
@@ -13,52 +21,55 @@ export function renderStoryBubble(ctx, theme, x, y, w, h, options = {}) {
     tailSide = 'right',
   } = options;
 
-  // 阴影
-  fillRoundRect(ctx, x + sz(2), y + sz(4), w, h, sz(16), 'rgba(0,0,0,0.34)');
-  // 面板
-  fillRoundRect(ctx, x, y, w, h, sz(16), hexToRgba(theme.panel, 0.94));
-  // 顶部细光
-  fillRoundRect(
-    ctx,
-    x + sz(14),
-    y + sz(9),
-    w - sz(28),
-    sz(2),
-    sz(1),
-    hexToRgba(theme.accent, 0.35)
-  );
-  // 尖角：指向当前说话的角色（嘉豪在右，主角在左）
+  // 尖角：指向当前说话的角色（对手在右，主角在左）
   if (showTail) {
-    const tw = sz(38);
-    const th = sz(18);
-    const tx = tailSide === 'left' ? x + sz(38) : x + w - sz(76);
+    const tw = sz(42);
+    const th = sz(19);
+    const tx = tailSide === 'left' ? x + sz(40) : x + w - sz(82);
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(tx, y + sz(2));
+    ctx.moveTo(tx, y + sz(3));
     ctx.lineTo(tx + tw / 2, y - th);
-    ctx.lineTo(tx + tw, y + sz(2));
+    ctx.lineTo(tx + tw, y + sz(3));
     ctx.closePath();
-    ctx.fillStyle = hexToRgba(theme.panel, 0.96);
+    ctx.fillStyle = '#ffffff';
     ctx.fill();
-    ctx.strokeStyle = hexToRgba(theme.accent, 0.8);
+    ctx.strokeStyle = '#bfe4f8';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(tx, y + sz(2));
+    ctx.moveTo(tx, y + sz(3));
     ctx.lineTo(tx + tw / 2, y - th);
-    ctx.lineTo(tx + tw, y + sz(2));
+    ctx.lineTo(tx + tw, y + sz(3));
     ctx.stroke();
     ctx.restore();
   }
-  // 面板描边
-  strokeRoundRect(ctx, x, y, w, h, sz(16), hexToRgba(theme.accent, 0.72), 1.5);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(80, 130, 180, 0.24)';
+  ctx.shadowBlur = sz(24);
+  ctx.shadowOffsetY = sz(10);
+  fillRoundRectGradient(ctx, x, y, w, h, sz(22), '#ffffff', '#eef8ff');
+  ctx.restore();
+  drawTopSheen(ctx, x, y, w, h, sz(22), 0.3);
+  fillRoundRect(
+    ctx,
+    x + sz(16),
+    y + sz(10),
+    w - sz(32),
+    sz(2),
+    sz(1),
+    hexToRgba(theme.primary, 0.16)
+  );
+  strokeRoundRect(ctx, x, y, w, h, sz(22), '#bfe4f8', 1.5);
 
   if (showName && speaker) {
-    drawPill(ctx, speaker, x + sz(14), y + sz(18), {
+    drawPill(ctx, speaker, x + sz(16), y + sz(21), {
       fontStr: font(sz(9), '800'),
-      color: theme.accent,
-      bg: hexToRgba(theme.accent, 0.14),
-      height: sz(18),
-      padX: sz(8),
+      color: '#ffffff',
+      bg: '#ff8a3d',
+      border: 'rgba(255,255,255,0.4)',
+      height: sz(19),
+      padX: sz(9),
     });
   }
 

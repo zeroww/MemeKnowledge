@@ -217,7 +217,7 @@ const { QUESTIONS } = await import('../js/data/questions.js');
 const { SKINS } = await import('../js/data/skins.js');
 const { RUN_PHASE } = await import('../js/core/types.js');
 const { default: RunEngine } = await import('../js/core/run-engine.js');
-const { LEVELS, LEVEL2_INTRO, LEVEL3_INTRO } = await import('../js/data/levels.js');
+const { LEVELS, LEVEL2_INTRO, LEVEL3_INTRO, LEVEL4_INTRO } = await import('../js/data/levels.js');
 const { SCREEN_WIDTH, SCREEN_HEIGHT } = await import('../js/render.js');
 
 function tick(ms = 0) {
@@ -279,11 +279,13 @@ assertInside(
   { x: homeLayout.x, y: homeLayout.storyY, w: homeLayout.storyW, h: homeLayout.storyH },
   'home story card'
 );
-assert.equal(
+assert.ok(
   homeLayout.heroRect,
-  null,
-  'home should not show the hero before the story starts'
+  'home should always show the cartoon hero as the main visual'
 );
+assertInside(homeLayout.heroRect, 'home cartoon hero');
+assert.equal(startButton.label, '开始游戏');
+assert.equal(startButton.icon, '📖');
 const startX = startButton.x + startButton.w / 2;
 const startY = startButton.y + startButton.h / 2;
 touchHandlers.start.forEach((handler) => handler({ touches: [{ clientX: startX, clientY: startY }] }));
@@ -291,7 +293,10 @@ touchHandlers.end.forEach((handler) =>
   handler({ touches: [], changedTouches: [{ clientX: startX, clientY: startY }] })
 );
 await tick(10);
-assert.equal(app.screenManager.currentName, 'levelIntro', 'home start should open story intro');
+assert.equal(app.screenManager.currentName, 'map', 'home CTA should open the campus map');
+app.screens.map.startLevel(1);
+await tick(10);
+assert.equal(app.screenManager.currentName, 'levelIntro', 'map level 1 should open story intro');
 assert.equal(app.audio.getBgmMode(), 'relaxed', 'dialogue intro should use relaxed BGM');
 app.update(0.016);
 app.render();
@@ -474,7 +479,7 @@ app.showScreen('map');
 app.update(0.016);
 app.render();
 const map = app.screens.map;
-assert.equal(map.rows.length, LEVELS.length);
+assert.equal(map.nodes.length, LEVELS.length);
 assert.equal(app.databus.isLevelCompleted(1), true);
 assert.equal(map.statusFor(LEVELS[1]), '可挑战', 'level 2 should unlock after level 1');
 assert.equal(map.statusFor(LEVELS[2]), '未解锁', 'level 3 should stay locked until level 2');
@@ -487,7 +492,6 @@ assertInside(
   },
   'map image card'
 );
-for (const row of map.rows) assertInside(row, 'map level row');
 map.openLevel(LEVELS[1]);
 app.render();
 assert.equal(map.modal.isVisible(), true, 'level 2 should offer a start dialog');
@@ -507,7 +511,7 @@ map.modal.hide();
 
 app.showScreen('home');
 app.render();
-assert.equal(app.screens.home.storyButton.label, '进入校园地图');
+assert.equal(app.screens.home.storyButton.label, '开始游戏');
 const homeAfterStory = app.screens.home.layoutInfo;
 assert.ok(homeAfterStory.heroRect, 'home should show the hero after the story has started');
 assertInside(homeAfterStory.heroRect, 'home hero after story start');
@@ -531,17 +535,11 @@ assertInside(
   'collection scroll'
 );
 
-app.showScreen('leaderboard', { period: 'daily' });
+app.showScreen('leaderboard', { period: 'week' });
 app.update(0.016);
 app.render();
-assert.equal(app.screens.leaderboard.period, 'daily');
+assert.equal(app.screens.leaderboard.period, 'week');
 assert.ok(app.screens.leaderboard.data.entries.length > 0);
-
-app.showScreen('daily');
-app.update(0.016);
-app.render();
-assert.equal(app.screens.daily.daily.questionIds.length, 10);
-assertInside(app.screens.daily.startButton, 'daily start button');
 
 app.showScreen('shop');
 app.update(0.016);
@@ -579,41 +577,6 @@ settings.modal.hide();
 for (const row of settings.rows) assertInside(row, 'settings row');
 
 app.showScreen('home');
-app.render();
-
-// ------------------------------------------------------------
-// 每日挑战：完整通关与 +200 首胜奖励
-// ------------------------------------------------------------
-app.databus.ensureDaily();
-app.databus.profile.daily.attempts = 0;
-app.databus.profile.daily.adUsed = false;
-app.databus.profile.daily.rewarded = false;
-app.showScreen('daily');
-app.update(0.016);
-app.render();
-await app.screens.daily.startDaily();
-await tick(10);
-assert.equal(app.screenManager.currentName, 'game', 'daily challenge should start');
-assert.equal(app.audio.getBgmMode(), 'tense', 'daily quiz should use tense BGM');
-const dailyGame = app.screens.game;
-assert.equal(dailyGame.run.mode, 'daily');
-
-for (let i = 0; i < 10; i += 1) {
-  const question = dailyGame.run.currentQuestion;
-  const answerResult = await dailyGame.submit(question.answerKey);
-  assert.equal(answerResult.correct, true);
-  dailyGame.advanceOrFinish();
-  if (app.screenManager.currentName === 'result') break;
-  app.render();
-}
-assert.equal(app.screenManager.currentName, 'result', 'daily challenge should reach result');
-await tick(10);
-app.render();
-const dailyResult = app.screens.result;
-assert.equal(dailyResult.dailyBonus, 200, 'daily first win bonus');
-assert.equal(dailyResult.totalCoins, 860, '280*2 + 100 + 200');
-assert.equal(app.profile.daily.rewarded, true);
-assert.equal(app.profile.daily.attempts, 1);
 app.render();
 
 // ------------------------------------------------------------
@@ -707,19 +670,6 @@ app.render();
 assert.equal(game2.modal.isVisible(), true);
 game2.modal.hide();
 game2.resumeTimerIfPlaying();
-
-// ------------------------------------------------------------
-// 每日挑战广告再挑战
-// ------------------------------------------------------------
-app.databus.ensureDaily();
-app.databus.profile.daily.attempts = 1;
-app.databus.profile.daily.adUsed = false;
-app.profile.lastAdAt = 0;
-const dailyAdPromise = app.adManager.showDailyRetry({ profile: app.profile });
-await completeMockAd(app);
-const dailyAd = await dailyAdPromise;
-assert.equal(dailyAd.ok, true);
-assert.ok(app.profile.adDaily.count >= 1);
 
 // ------------------------------------------------------------
 // 隐藏 / 显示生命周期
@@ -831,7 +781,7 @@ app.render();
 const mapAfterLevel1 = app.screens.map;
 assert.equal(mapAfterLevel1.statusFor(LEVELS[1]), '可挑战');
 assert.equal(mapAfterLevel1.statusFor(LEVELS[2]), '未解锁');
-assert.equal(mapAfterLevel1.statusFor(LEVELS[3]), '未开放');
+assert.equal(mapAfterLevel1.statusFor(LEVELS[3]), '未解锁', 'library should stay locked until chapter 3');
 mapAfterLevel1.openLevel(LEVELS[1]);
 app.render();
 assert.equal(mapAfterLevel1.modal.isVisible(), true);
@@ -949,15 +899,81 @@ assert.equal(app.databus.getStoryProgress().currentLevel, 4);
 app.showScreen('map');
 app.render();
 assert.equal(app.screens.map.statusFor(LEVELS[2]), '已通关');
-assert.equal(app.screens.map.statusFor(LEVELS[3]), '未开放');
+assert.equal(app.screens.map.statusFor(LEVELS[3]), '可挑战', 'library should unlock after chapter 3');
+app.screens.map.openLevel(LEVELS[3]);
+app.render();
+assert.equal(app.screens.map.modal.isVisible(), true);
+assert.ok(
+  app.screens.map.modal.buttons.some((button) => String(button.label).includes('开始本章')),
+  'level 4 dialog should have a start button'
+);
+app.screens.map.modal.hide();
+
+// 第四章开场：馆长登场
+assert.equal(LEVELS[3].available, true, 'library chapter should be available');
+assert.ok(
+  LEVELS[3].questionPool.length >= 10,
+  'level 4 pool should have enough questions for the 3/4/3 plan'
+);
+for (const id of LEVELS[3].questionPool) {
+  assert.ok(
+    !LEVELS[1].questionPool.includes(id) && !LEVELS[2].questionPool.includes(id),
+    `level 4 question ${id} should not repeat earlier chapter pools`
+  );
+}
+app.showScreen('levelIntro', { levelId: 4 });
+await tick(10);
+const intro4 = app.screens.levelIntro;
+assert.equal(intro4.level.id, 4);
+assert.equal(intro4.opponentName, '馆长');
+assert.equal(intro4.steps.length, LEVEL4_INTRO.length);
+assert.equal(intro4.heroSeen, false);
+assert.equal(intro4.opponentSeen, false);
+intro4.nextStep();
+assert.equal(intro4.opponentSeen, false);
+intro4.nextStep();
+assert.equal(intro4.opponentSeen, false);
+intro4.nextStep();
+assert.equal(intro4.opponentSeen, true, 'curator should appear on his first line');
+intro4.nextStep();
+assert.equal(intro4.heroSeen, true, 'hero should appear on their first line');
+assertInside(intro4.layoutInfo.opponentRect, 'level 4 intro portrait');
+advanceIntro(intro4);
+await tick(20);
+
+assert.equal(app.screenManager.currentName, 'storyGame');
+const level4Game = app.screens.storyGame;
+assert.equal(level4Game.run.levelId, 4);
+assert.equal(level4Game.level.speaker, '馆长');
+assert.equal(level4Game.opponentName, '馆长');
+assertInside(level4Game.layout.opponentRect, 'level 4 question portrait');
+assert.deepEqual(
+  level4Game.run.questions.map((question) => question.difficulty),
+  [1, 1, 1, 2, 2, 2, 2, 3, 3, 3],
+  'level 4 should follow the 3/4/3 plan'
+);
+assert.equal(level4Game.run.questions[9].isBoss, true, 'level 4 last question should be BOSS');
+for (const question of level4Game.run.questions) {
+  assert.ok(
+    LEVELS[3].questionPool.includes(question.id),
+    `level 4 question ${question.id} should come from its pool`
+  );
+}
+app.render();
+
+const result4 = await finishStoryLevel(level4Game);
+assert.equal(result4.level.id, 4);
+assert.equal(result4.claim.score, 280);
+assert.equal(app.databus.isLevelCompleted(4), true);
+assert.equal(app.databus.getStoryProgress().currentLevel, 5);
+
+app.showScreen('map');
+app.render();
+assert.equal(app.screens.map.statusFor(LEVELS[3]), '已通关');
 
 app.showScreen('home');
 app.render();
-assert.equal(app.screens.home.storyButton.label, '进入校园地图');
-assert.ok(
-  String(app.screens.home.storyButton.subLabel).includes('第一至第三章'),
-  'home should show all three chapters completed'
-);
+assert.equal(app.screens.home.storyButton.label, '开始游戏');
 
 console.log('app-smoke.test: PASS');
 console.log(
@@ -966,17 +982,16 @@ console.log(
       initialCoins: 300,
       allCorrectScore: 280,
       unlocked: 10,
-      pagesRendered: ['home', 'levelIntro', 'storyGame', 'result', 'map', 'collection', 'leaderboard', 'daily', 'shop', 'settings'],
+      pagesRendered: ['home', 'levelIntro', 'storyGame', 'result', 'map', 'collection', 'leaderboard', 'shop', 'settings'],
       storyLevel1: true,
       storyLevel2: true,
       storyLevel3: true,
+      storyLevel4: true,
       levelMap: true,
       hintCoinFlow: true,
       adReviveFlow: true,
       extendFlow: true,
       doubleFlow: true,
-      dailyWinBonus: true,
-      dailyAdFlow: true,
       snapshotResume: true,
       bgmScenes: true,
       clearData: true,

@@ -112,9 +112,9 @@ export default class ScrollView {
       const thumbY = this.y + 4 + (this.offset / max) * (trackH - thumbH);
       ctx.save();
       ctx.globalAlpha = 0.5;
-      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fillStyle = 'rgba(60, 100, 140, 0.16)';
       ctx.fillRect(trackX, this.y + 4, 2, trackH);
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillStyle = 'rgba(60, 100, 140, 0.42)';
       ctx.fillRect(trackX, thumbY, 2, thumbH);
       ctx.restore();
     }

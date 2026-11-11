@@ -13,7 +13,6 @@ export const DEFAULT_CONFIG = {
     hint: 'adunit-xxxxxxxxxxxx',
     extend: 'adunit-xxxxxxxxxxxx',
     double: 'adunit-xxxxxxxxxxxx',
-    daily: 'adunit-xxxxxxxxxxxx',
     interstitial: 'adunit-xxxxxxxxxxxx',
   },
   caps: { ...CAPS },
@@ -24,7 +23,6 @@ export const DEFAULT_CONFIG = {
   },
   features: {
     bossEnabled: true,
-    dailyEnabled: true,
     leaderboardEnabled: true,
     shopEnabled: true,
     collectionEnabled: true,

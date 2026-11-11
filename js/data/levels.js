@@ -1,6 +1,6 @@
 /**
  * 剧情关卡定义。
- * 第一至第三章已实现；第四章「图书馆」在地图中预留节点，当前仍为未开放。
+ * 第一至第四章已实现：宿舍 / 食堂 / 教室 / 图书馆。
  */
 export const STORY_ASSETS = {
   background: 'assets/story/background1.jpg',
@@ -56,6 +56,33 @@ const LEVEL3_QUESTION_POOL = [
   'q_mw_0110',
   'q_mw_0104',
   'q_mw_0142',
+];
+
+/**
+ * 第四章「图书馆」：馆长的闭馆答辩——把前三章的梗总复习一遍。
+ * 题目全部来自内置题库，不与第二、三章题池重复。
+ */
+const LEVEL4_QUESTION_POOL = [
+  // 易：好运、情绪稳定、破防、自我认知、表达与社死
+  'q_mw_0006',
+  'q_mw_0011',
+  'q_mw_0033',
+  'q_mw_0039',
+  'q_mw_0046',
+  'q_mw_0086',
+  // 中：打脸、旅游特种兵、电子木鱼、小卡拉米、这波操作、情绪价值
+  'q_mw_0016',
+  'q_mw_0019',
+  'q_mw_0020',
+  'q_mw_0052',
+  'q_mw_0060',
+  'q_mw_0100',
+  // 难：水灵灵地、配享太庙词源、水豚，以及 BOSS「典中典」「南上加南」
+  'q_mw_0029',
+  'q_mw_0030',
+  'q_mw_0109',
+  'q_mw_0149',
+  'q_mw_0074',
 ];
 
 export const LEVELS = [
@@ -133,25 +160,31 @@ export const LEVELS = [
     chapter: '第四章',
     name: '图书馆',
     title: '第四章 · 图书馆',
-    subtitle: '隐藏章节',
-    available: false,
-    status: '未开放',
+    subtitle: '馆长的闭馆答辩',
+    available: true,
+    status: '可挑战',
     mapLabel: '图书馆',
     mapNode: { x: 0.897, y: 0.251 },
     nextId: null,
     requires: 3,
-    speaker: '？',
-    questionPool: null,
-    description: '隐藏章节，暂未开放。',
-    unlockHint: '先完成第三章「教室」。',
+    speaker: '馆长',
+    background: 'assets/story/background4.jpg',
+    portrait: 'assets/story/role4.png',
+    portraitAspect: 440 / 640,
+    ask: 'assets/story/role4-1.png',
+    askAspect: 460 / 520,
+    heroes: STORY_ASSETS.heroes,
+    questionPool: LEVEL4_QUESTION_POOL,
+    description: '闭馆铃响过三遍，图书馆深处还亮着一盏灯。馆长在等你交出最后十道答案。',
+    unlockHint: '先完成第三章「教室」，才能进入图书馆。',
   },
 ];
 
 export const STORY_PREMISE = [
   '你穿越到了一个靠梗知识生存的世界。',
   '这里的人用梗交流；接不住梗的人，会被世界淘汰。',
-  '宿舍的嘉豪、食堂的芬姨、教室的李老师，都在等你接招。',
-  '活过三关，才能找到回去的路。',
+  '宿舍的嘉豪、食堂的芬姨、教室的李老师、图书馆的馆长，都在等你接招。',
+  '活过四关，才能找到回去的路。',
 ];
 
 export const LEVEL1_INTRO = [
@@ -243,6 +276,45 @@ export const LEVEL3_INTRO = [
   },
 ];
 
+export const LEVEL4_INTRO = [
+  {
+    speaker: '旁白',
+    text: '你跟着李老师穿过熄灯后的走廊。尽头那扇旧木门，是入学那天就锁着的图书馆。',
+  },
+  {
+    speaker: '旁白',
+    text: '李老师在门口停下脚步，没有再往里走。门自己开了。',
+  },
+  {
+    speaker: '旁白',
+    text: '月光落在书架之间，一本厚重的书浮在半空，缓缓翻过一页。',
+  },
+  {
+    speaker: '馆长',
+    text: '等你很久了。每个想离开梗世界的人，都要先过我这一关。',
+  },
+  {
+    speaker: '你',
+    text: '你是……一本书？',
+  },
+  {
+    speaker: '馆长',
+    text: '我是这座图书馆的馆长。这里收着所有没能接住的梗，也收着回去的路。',
+  },
+  {
+    speaker: '馆长',
+    text: '十道题，三次机会。答完，门就开；答不完，你就留下来，当下一本书。',
+  },
+  {
+    speaker: '你',
+    text: '……这学校的图书馆，比食堂还离谱。',
+  },
+  {
+    speaker: '馆长',
+    text: '翻开第一页吧。这是你在这个世界的最后一次答辩。',
+  },
+];
+
 export function getLevelById(id) {
   return LEVELS.find((level) => level.id === Number(id)) || null;
 }
@@ -257,6 +329,7 @@ export function getLevelIntro(levelId) {
   if (id === 1) return LEVEL1_INTRO;
   if (id === 2) return LEVEL2_INTRO;
   if (id === 3) return LEVEL3_INTRO;
+  if (id === 4) return LEVEL4_INTRO;
   return [
     {
       speaker: '旁白',

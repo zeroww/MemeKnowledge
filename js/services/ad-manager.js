@@ -209,58 +209,6 @@ export default class AdManager {
   }
 
   /**
-   * 每日挑战额外一次机会。
-   * 不绑定某一局，因此只检查每日上限与冷却。
-   */
-  async showDailyRetry({ profile }) {
-    if (this.showing) return { ok: false, code: 'BUSY' };
-    const cfg = this.config || {};
-    const caps = cfg.caps || {};
-
-    if (cfg.killSwitches && cfg.killSwitches.disableAds) {
-      return { ok: false, code: 'ADS_DISABLED' };
-    }
-    const daily = this.ensureDaily(profile);
-    if ((daily.count || 0) >= (caps.rewardedPerDay || 12)) {
-      return { ok: false, code: 'DAILY_AD_LIMIT' };
-    }
-    const cooldown = (caps.adCooldownMs || 5000) - (Date.now() - (profile.lastAdAt || 0));
-    if (cooldown > 0) return { ok: false, code: 'AD_COOLDOWN', cooldownMs: cooldown };
-
-    this.showing = true;
-    const useMock = !cfg.adsEnabled || cfg.mockAds;
-    let completed = false;
-    try {
-      if (useMock) {
-        completed = this.mockAd ? await this.mockAd.show(AD_PLACEMENT.DAILY) : true;
-      } else {
-        completed = await this.showRealRewarded(AD_PLACEMENT.DAILY);
-      }
-    } catch (error) {
-      completed = false;
-    } finally {
-      this.showing = false;
-    }
-
-    if (!completed) {
-      if (this.analytics) this.analytics.track('ad_close', { placement: AD_PLACEMENT.DAILY, isEnded: false });
-      return { ok: false, code: 'AD_NOT_COMPLETED' };
-    }
-
-    daily.count += 1;
-    profile.lastAdAt = Date.now();
-    saveProfile(profile);
-    if (this.analytics) {
-      this.analytics.track('ad_complete', {
-        placement: AD_PLACEMENT.DAILY,
-        isEnded: true,
-        dailyCount: daily.count,
-      });
-    }
-    return { ok: true, mock: useMock };
-  }
-
-  /**
    * 结算后插屏。返回是否真正展示。
    */
   async showInterstitial({ profile, runsCompleted }) {

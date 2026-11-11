@@ -51,8 +51,10 @@
     "ignore": [
       { "type": "folder", "value": "docs" },
       { "type": "folder", "value": "tests" },
+      { "type": "folder", "value": "tools" },
       { "type": "folder", "value": ".claude" },
       { "type": "folder", "value": ".idea" },
+      { "type": "folder", "value": "assets/ui/icons" },
       { "type": "file", "value": "package.json" },
       { "type": "file", "value": "README.md" },
       { "type": "file", "value": ".eslintrc.js" }

@@ -1,11 +1,19 @@
 import { QUESTIONS } from '../data/questions.js';
-import { DIFFICULTY_LABEL, TYPE_ICON, TYPE_LABEL } from '../core/types.js';
+import { DIFFICULTY_LABEL, TYPE_LABEL } from '../core/types.js';
 import { SCREEN_HEIGHT, SAFE_BOTTOM, sz } from '../render.js';
 import Button from '../ui/button.js';
 import Modal from '../ui/modal.js';
 import ScrollView from '../ui/scroll-view.js';
-import { drawGlassPanel, drawPill, drawText, font, hexToRgba, wrapText } from '../ui/draw.js';
+import { drawIcon, drawIconTile } from '../ui/icons.js';
+import { drawGlassPanel, drawPill, drawText, font, hexToRgba, wrapText, drawCheckMark } from '../ui/draw.js';
 import BaseScreen from './base-screen.js';
+
+const TYPE_ICON_NAME = {
+  image: 'image',
+  dialogue: 'chat',
+  truefalse: 'quiz',
+  meaning: 'book',
+};
 
 const FILTERS = [
   { key: 'all', label: '全部' },
@@ -45,7 +53,9 @@ export default class CollectionScreen extends BaseScreen {
       y: top,
       w: backSize,
       h: backSize,
-      label: '←',
+      label: '',
+      icon: '←',
+      iconName: 'back',
       style: 'dark',
       fontSize: sz(16),
       onClick: () => this.app.goHome(),
@@ -61,7 +71,7 @@ export default class CollectionScreen extends BaseScreen {
         w: tabW,
         h: sz(34),
         label: item.label,
-        style: item.key === this.filter ? 'primary' : 'secondary',
+        style: item.key === this.filter ? 'candyBlue' : 'secondary',
         fontSize: sz(13),
         onClick: () => this.switchFilter(item.key),
       });
@@ -84,7 +94,7 @@ export default class CollectionScreen extends BaseScreen {
     if (this.filter === filter) return;
     this.filter = filter;
     this.tabs.forEach((button, index) => {
-      button.style = FILTERS[index].key === filter ? 'primary' : 'secondary';
+      button.style = FILTERS[index].key === filter ? 'candyBlue' : 'secondary';
     });
     this.applyFilter();
   }
@@ -174,52 +184,58 @@ export default class CollectionScreen extends BaseScreen {
     drawGlassPanel(ctx, screenX, screenY, w, h, sz(13), theme, unlocked ? 0.9 : 0.6, unlocked ? 0.8 : 0.4);
 
     const rarityColor =
-      question.difficulty === 3 ? theme.danger : question.difficulty === 2 ? theme.accent : theme.muted;
+      question.difficulty === 3 ? '#f2544b' : question.difficulty === 2 ? '#ff9f2e' : '#3a97f7';
     drawPill(ctx, DIFFICULTY_LABEL[question.difficulty], screenX + sz(10), screenY + sz(14), {
-      fontStr: font(sz(8), '700'),
-      color: rarityColor,
-      bg: hexToRgba(rarityColor, 0.14),
+      fontStr: font(sz(8), '800'),
+      color: '#ffffff',
+      bg: rarityColor,
+      border: 'rgba(255,255,255,0.5)',
       height: sz(15),
       padX: sz(6),
     });
 
-    drawText(ctx, TYPE_ICON[question.type], screenX + w - sz(16), screenY + sz(16), {
-      font: font(sz(15), '400'),
-      color: theme.text,
-      align: 'center',
-      baseline: 'middle',
-    });
-
     if (unlocked) {
+      drawIcon(
+        ctx,
+        TYPE_ICON_NAME[question.type] || 'quiz',
+        screenX + w - sz(18),
+        screenY + sz(17),
+        sz(20)
+      );
       ctx.font = font(sz(12), '600');
       const lines = wrapText(ctx, question.stem, w - sz(20), 2);
       ctx.fillStyle = theme.text;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       lines.forEach((line, index) => {
-        ctx.fillText(line, screenX + sz(10), screenY + sz(32) + index * sz(16));
+        ctx.fillText(line, screenX + sz(10), screenY + sz(34) + index * sz(16));
       });
       drawText(ctx, TYPE_LABEL[question.type], screenX + sz(10), screenY + h - sz(12), {
         font: font(sz(9), '500'),
         color: theme.muted,
         baseline: 'bottom',
       });
-      drawText(ctx, '✓', screenX + w - sz(14), screenY + h - sz(12), {
-        font: font(sz(12), '800'),
-        color: theme.success,
-        align: 'right',
-        baseline: 'bottom',
-      });
+      drawCheckMark(ctx, screenX + w - sz(18), screenY + h - sz(15), sz(12), theme.success, sz(2.4));
     } else {
-      drawText(ctx, '???', screenX + w / 2, screenY + sz(42), {
-        font: font(sz(20), '900'),
-        color: hexToRgba(theme.muted, 0.7),
-        align: 'center',
-        baseline: 'middle',
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      drawIconTile(
+        ctx,
+        TYPE_ICON_NAME[question.type] || 'quiz',
+        screenX + w / 2 - sz(24),
+        screenY + sz(22),
+        sz(48),
+        sz(48),
+        { iconScale: 0.56, radius: sz(16) }
+      );
+      ctx.restore();
+      drawIconTile(ctx, 'lock', screenX + w / 2 - sz(11), screenY + sz(48), sz(26), sz(26), {
+        iconScale: 0.6,
+        radius: sz(9),
       });
-      drawText(ctx, '答对后解锁', screenX + w / 2, screenY + h - sz(16), {
-        font: font(sz(9), '500'),
-        color: hexToRgba(theme.muted, 0.8),
+      drawText(ctx, '答对后解锁', screenX + w / 2, screenY + h - sz(14), {
+        font: font(sz(9), '600'),
+        color: hexToRgba(theme.muted, 0.9),
         align: 'center',
         baseline: 'middle',
       });

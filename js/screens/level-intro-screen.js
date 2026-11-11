@@ -11,7 +11,7 @@ import {
   loadImage,
 } from '../services/assets.js';
 import Button from '../ui/button.js';
-import { clamp, drawText, font, hexToRgba, wrapText } from '../ui/draw.js';
+import { clamp, drawText, font, wrapText } from '../ui/draw.js';
 import { renderLives } from '../ui/life-bar.js';
 import { renderStoryBubble } from '../ui/story-bubble.js';
 import BaseScreen from './base-screen.js';
@@ -80,7 +80,9 @@ export default class LevelIntroScreen extends BaseScreen {
       y: top,
       w: sz(32),
       h: sz(32),
-      label: '←',
+      label: '',
+      icon: '←',
+      iconName: 'back',
       style: 'dark',
       fontSize: sz(15),
       onClick: () => this.app.goHome(),
@@ -201,11 +203,17 @@ export default class LevelIntroScreen extends BaseScreen {
       ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
     const overlay = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    overlay.addColorStop(0, 'rgba(7, 9, 13, 0.5)');
-    overlay.addColorStop(0.6, 'rgba(7, 9, 13, 0.62)');
-    overlay.addColorStop(1, 'rgba(7, 9, 13, 0.9)');
+    overlay.addColorStop(0, 'rgba(14, 38, 86, 0.16)');
+    overlay.addColorStop(0.5, 'rgba(12, 30, 70, 0.2)');
+    overlay.addColorStop(1, 'rgba(8, 18, 46, 0.58)');
     ctx.fillStyle = overlay;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    const topScrim = ctx.createLinearGradient(0, 0, 0, top + sz(92));
+    topScrim.addColorStop(0, 'rgba(10, 26, 62, 0.58)');
+    topScrim.addColorStop(1, 'rgba(10, 26, 62, 0)');
+    ctx.fillStyle = topScrim;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, top + sz(92));
 
     this.backButton.render(ctx, theme);
     drawText(ctx, this.level ? this.level.title : '剧情章节', x + sz(44), top + sz(2), {
@@ -323,7 +331,7 @@ export default class LevelIntroScreen extends BaseScreen {
     measureCtx.font = font(fontSize, '500');
     const lines = wrapText(measureCtx, step.text, textW, maxLines);
     ctx.font = font(fontSize, '500');
-    ctx.fillStyle = 'rgba(247,242,231,0.94)';
+    ctx.fillStyle = '#1f4e9c';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     lines.forEach((line, index) => {
@@ -337,7 +345,7 @@ export default class LevelIntroScreen extends BaseScreen {
       bubbleRect.y + sz(18),
       {
         font: font(sz(9), '600'),
-        color: theme.muted,
+        color: '#7fa3c6',
         align: 'right',
         baseline: 'middle',
       }
@@ -345,19 +353,6 @@ export default class LevelIntroScreen extends BaseScreen {
 
     this.skipButton.render(ctx, theme);
     this.nextButton.render(ctx, theme);
-
-    drawText(
-      ctx,
-      '点击“继续”推进对话；进入答题后，每答错一题会失去 1 点生命',
-      this.contentX + this.contentW / 2,
-      this.bottom - sz(4),
-      {
-        font: font(sz(8), '400'),
-        color: 'rgba(255,255,255,0.42)',
-        align: 'center',
-        baseline: 'bottom',
-      }
-    );
   }
 
   onTouchStart(x, y) {

@@ -1,22 +1,23 @@
-import { getBeijingDateKey, getWeekKey } from '../core/daily.js';
+import { getWeekKey } from '../core/daily.js';
 import { buildLeaderboard } from '../core/leaderboard.js';
 import { SCREEN_HEIGHT, SAFE_BOTTOM, sz } from '../render.js';
 import Button from '../ui/button.js';
 import ScrollView from '../ui/scroll-view.js';
+import { drawIcon } from '../ui/icons.js';
 import {
   drawGlassPanel,
   drawText,
-  fillRoundRect,
+  fillCircle,
   font,
   formatDuration,
   hexToRgba,
+  strokeRoundRect,
 } from '../ui/draw.js';
 import BaseScreen from './base-screen.js';
 
 const PERIODS = [
   { key: 'week', label: '周榜' },
   { key: 'total', label: '总榜' },
-  { key: 'daily', label: '每日榜' },
 ];
 
 export default class LeaderboardScreen extends BaseScreen {
@@ -31,7 +32,7 @@ export default class LeaderboardScreen extends BaseScreen {
   }
 
   onEnter() {
-    this.period = ['week', 'total', 'daily'].includes(this.params.period) ? this.params.period : 'week';
+    this.period = ['week', 'total'].includes(this.params.period) ? this.params.period : 'week';
     this.scroll = new ScrollView();
     this.layout();
     this.refresh();
@@ -48,7 +49,9 @@ export default class LeaderboardScreen extends BaseScreen {
       y: top,
       w: backSize,
       h: backSize,
-      label: '←',
+      label: '',
+      icon: '←',
+      iconName: 'back',
       style: 'dark',
       fontSize: sz(16),
       onClick: () => this.app.goHome(),
@@ -56,7 +59,7 @@ export default class LeaderboardScreen extends BaseScreen {
 
     const tabsY = top + sz(52);
     const gap = sz(8);
-    const tabW = (w - gap * 2) / 3;
+    const tabW = (w - gap * (PERIODS.length - 1)) / PERIODS.length;
     this.tabs = PERIODS.map((item, index) => {
       return new Button({
         x: x + index * (tabW + gap),
@@ -64,7 +67,7 @@ export default class LeaderboardScreen extends BaseScreen {
         w: tabW,
         h: sz(34),
         label: item.label,
-        style: item.key === this.period ? 'primary' : 'secondary',
+        style: item.key === this.period ? 'candyBlue' : 'secondary',
         fontSize: sz(13),
         onClick: () => this.switchPeriod(item.key),
       });
@@ -84,7 +87,7 @@ export default class LeaderboardScreen extends BaseScreen {
     if (this.period === period) return;
     this.period = period;
     this.tabs.forEach((button, index) => {
-      button.style = PERIODS[index].key === period ? 'primary' : 'secondary';
+      button.style = PERIODS[index].key === period ? 'candyBlue' : 'secondary';
     });
     this.refresh();
     this.app.analytics.track('leaderboard_view', { period, myRank: this.data.playerRank });
@@ -93,8 +96,7 @@ export default class LeaderboardScreen extends BaseScreen {
   refresh() {
     const period = this.period;
     const player = this.app.databus.getLeaderboardProfile(period);
-    const seedKey =
-      period === 'daily' ? getBeijingDateKey() : period === 'week' ? getWeekKey() : 'all';
+    const seedKey = period === 'week' ? getWeekKey() : 'all';
     this.data = buildLeaderboard({ period, player, seedKey, limit: 24 });
     this.rows = this.data.entries.map((entry, index) => ({
       entry,
@@ -121,8 +123,7 @@ export default class LeaderboardScreen extends BaseScreen {
       color: theme.text,
       baseline: 'top',
     });
-    drawText(ctx, '本地演示榜单 · 每周一 00:00 重置', x + sz(46), top + sz(36), {
-      font: font(sz(10), '500'),
+    drawText(ctx, '本地演示榜单 · 每周一 00:00 重置', x + sz(46), top + sz(36), {      font: font(sz(10), '500'),
       color: theme.muted,
       baseline: 'top',
     });
@@ -144,7 +145,7 @@ export default class LeaderboardScreen extends BaseScreen {
     const playerScore = this.data.playerScore || 0;
     drawText(ctx, playerScore > 0 ? `${playerScore} 分` : '暂无成绩', x + w - sz(16), playerCardY + sz(20), {
       font: font(sz(20), '900'),
-      color: playerScore > 0 ? theme.accent : theme.muted,
+      color: playerScore > 0 ? theme.primary : theme.muted,
       align: 'right',
       baseline: 'top',
     });
@@ -173,35 +174,33 @@ export default class LeaderboardScreen extends BaseScreen {
         return;
       }
 
-      this.rows.forEach((row) => {
+      this.rows.forEach((row, index) => {
         const screenY = listY + row.y - offset;
         if (screenY + row.h < listY || screenY > SCREEN_HEIGHT) return;
         const entry = row.entry;
         const isPlayer = entry.isPlayer;
+        drawGlassPanel(drawCtx, row.x, screenY, row.w, row.h, sz(12), theme, 0.94, 0.9);
         if (isPlayer) {
-          fillRoundRect(
+          strokeRoundRect(
             drawCtx,
             row.x,
             screenY,
             row.w,
             row.h,
             sz(12),
-            hexToRgba(theme.primary, 0.16)
+            theme.primary,
+            1.5
           );
         }
         drawText(drawCtx, String(this.data.entries.indexOf(entry) + 1), row.x + sz(18), screenY + row.h / 2, {
           font: font(sz(13), '800'),
-          color: isPlayer ? theme.accent : theme.muted,
+          color: isPlayer ? theme.primary : index < 3 ? '#f5a300' : theme.muted,
           align: 'center',
           baseline: 'middle',
         });
-        drawText(drawCtx, entry.emoji, row.x + sz(42), screenY + row.h / 2, {
-          font: font(sz(17), '400'),
-          color: theme.text,
-          align: 'center',
-          baseline: 'middle',
-        });
-        drawText(drawCtx, entry.nickname, row.x + sz(62), screenY + row.h / 2 - sz(6), {
+        fillCircle(drawCtx, row.x + sz(42), screenY + row.h / 2, sz(15), '#dff2ff');
+        drawIcon(drawCtx, 'user', row.x + sz(42), screenY + row.h / 2 + sz(1), sz(22));
+        drawText(drawCtx, entry.nickname, row.x + sz(64), screenY + row.h / 2 - sz(6), {
           font: font(sz(13), isPlayer ? '800' : '600'),
           color: isPlayer ? theme.text : hexToRgba(theme.text, 0.92),
           baseline: 'middle',
@@ -213,25 +212,12 @@ export default class LeaderboardScreen extends BaseScreen {
         });
         drawText(drawCtx, `${entry.score} 分`, row.x + row.w - sz(16), screenY + row.h / 2, {
           font: font(sz(15), '800'),
-          color: isPlayer ? theme.accent : theme.text,
+          color: isPlayer ? theme.primary : theme.text,
           align: 'right',
           baseline: 'middle',
         });
       });
     });
-
-    drawText(
-      ctx,
-      '排行榜为本地演示数据，不代表真实全服排名',
-      this.contentX + this.contentW / 2,
-      this.bottom - sz(12),
-      {
-        font: font(sz(9), '400'),
-        color: hexToRgba(theme.muted, 0.7),
-        align: 'center',
-        baseline: 'middle',
-      }
-    );
   }
 
   onTouchStart(x, y) {

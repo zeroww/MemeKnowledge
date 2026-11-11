@@ -1,6 +1,7 @@
 import { APP_VERSION } from '../core/types.js';
 import { sz } from '../render.js';
 import Button from '../ui/button.js';
+import { drawIcon } from '../ui/icons.js';
 import Modal from '../ui/modal.js';
 import {
   drawGlassPanel,
@@ -40,21 +41,23 @@ export default class SettingsScreen extends BaseScreen {
       y: top,
       w: sz(34),
       h: sz(34),
-      label: '←',
+      label: '',
+      icon: '←',
+      iconName: 'back',
       style: 'dark',
       fontSize: sz(16),
       onClick: () => this.app.goHome(),
     });
 
     const definitions = [
-      { key: 'sound', label: '音效', type: 'toggle', value: this.profile.settings.sound },
-      { key: 'bgm', label: '背景音乐（轻松/紧张）', type: 'toggle', value: this.profile.settings.bgm },
-      { key: 'vibration', label: '振动', type: 'toggle', value: this.profile.settings.vibration },
-      { key: 'nickname', label: '昵称', type: 'value', value: this.profile.nickname },
-      { key: 'privacy', label: '隐私说明', type: 'link' },
-      { key: 'about', label: '关于', type: 'value', value: `v${APP_VERSION}` },
-      { key: 'feedback', label: '意见反馈', type: 'link' },
-      { key: 'clear', label: '清除我的数据', type: 'danger' },
+      { key: 'sound', label: '音效', icon: 'volume', type: 'toggle', value: this.profile.settings.sound },
+      { key: 'bgm', label: '背景音乐（轻松/紧张）', icon: 'music', type: 'toggle', value: this.profile.settings.bgm },
+      { key: 'vibration', label: '振动', icon: 'vibrate', type: 'toggle', value: this.profile.settings.vibration },
+      { key: 'nickname', label: '昵称', icon: 'user', type: 'value', value: this.profile.nickname },
+      { key: 'privacy', label: '隐私说明', icon: 'shield', type: 'link' },
+      { key: 'about', label: '关于', icon: 'info', type: 'value', value: `v${APP_VERSION}` },
+      { key: 'feedback', label: '意见反馈', icon: 'chat', type: 'link' },
+      { key: 'clear', label: '清除我的数据', icon: 'trash', type: 'danger' },
     ];
 
     this.rows = definitions.map((definition, index) => ({
@@ -90,6 +93,7 @@ export default class SettingsScreen extends BaseScreen {
     if (row.key === 'privacy') {
       this.modal.show({
         title: '隐私说明',
+        icon: 'shield',
         message:
           '本 Demo 只在本机保存昵称、梗币、图鉴、排行榜、皮肤与设置。\n\n不采集手机号、位置、通讯录、相册；不接入真实广告、云开发或支付；分享不提供奖励。\n\n设置页提供“清除我的数据”，会删除全部本地记录。正式上线前需补充并配置完整的微信隐私保护指引。',
         buttons: [{ label: '知道了', style: 'primary' }],
@@ -99,7 +103,8 @@ export default class SettingsScreen extends BaseScreen {
     if (row.key === 'about') {
       this.modal.show({
         title: '关于梗世界',
-        message: `版本 v${APP_VERSION}\n\n一款 3～5 分钟一局的网络热梗知识答题游戏。\n\n本轮为本地单机 Demo：广告为模拟、排行榜为本地演示数据、题库需人工复核。\n\n150 道题 · 4 类题型 · 6 款皮肤 · 10 题一局`,
+        icon: 'info',
+        message: `版本 v${APP_VERSION}\n\n一款 3～5 分钟一局的网络热梗知识答题游戏。\n\n本轮为本地单机 Demo：广告为模拟、排行榜为本地演示数据、题库需人工复核。\n\n150 道题 · 4 类题型 · 6 款皮肤 · 4 章剧情 · 10 题一局`,
         buttons: [{ label: '知道了', style: 'primary' }],
       });
       return;
@@ -107,6 +112,7 @@ export default class SettingsScreen extends BaseScreen {
     if (row.key === 'feedback') {
       this.modal.show({
         title: '意见反馈',
+        icon: 'chat',
         message:
           '开发阶段：请把问题记录在项目 README 或提交给开发者。\n\n正式上线前应接入微信客服/反馈入口，并建立内容投诉 24 小时响应流程。',
         buttons: [{ label: '关闭', style: 'primary' }],
@@ -116,12 +122,15 @@ export default class SettingsScreen extends BaseScreen {
     if (row.key === 'clear') {
       this.modal.show({
         title: '清除我的数据？',
+        icon: 'trash',
         message: '将删除昵称、梗币、图鉴、排行榜、皮肤、设置和当前对局快照。此操作不可恢复。',
         tone: 'danger',
         buttons: [
           { label: '取消', style: 'secondary' },
           {
             label: '确认清除',
+            icon: '🗑️',
+            iconName: 'trash',
             style: 'danger',
             onClick: () => this.app.clearAllData(),
           },
@@ -194,21 +203,46 @@ export default class SettingsScreen extends BaseScreen {
         theme,
         isDanger ? 0.55 : 0.82
       );
-      drawText(ctx, row.label, row.x + sz(14), row.y + row.h / 2, {
+      const iconEntry = row.icon;
+      if (iconEntry) {
+        drawIcon(ctx, iconEntry, row.x + sz(28), row.y + row.h / 2, sz(27));
+      }
+      drawText(ctx, row.label, row.x + sz(50), row.y + row.h / 2, {
         font: font(sz(14), row.type === 'link' || row.type === 'value' ? '600' : '500'),
         color: isDanger ? theme.danger : theme.text,
         baseline: 'middle',
       });
 
       if (row.type === 'toggle') {
-        const trackW = sz(40);
-        const trackH = sz(22);
+        const trackW = sz(42);
+        const trackH = sz(23);
         const tx = row.x + row.w - sz(14) - trackW;
         const ty = row.y + (row.h - trackH) / 2;
-        fillRoundRect(ctx, tx, ty, trackW, trackH, trackH / 2, row.value ? theme.success : hexToRgba(theme.muted, 0.35));
+        const track = ctx.createLinearGradient(tx, ty, tx, ty + trackH);
+        if (row.value) {
+          track.addColorStop(0, '#7ee06a');
+          track.addColorStop(1, '#2fb63f');
+        } else {
+          track.addColorStop(0, '#e3edf7');
+          track.addColorStop(1, '#c6d8e9');
+        }
+        fillRoundRect(ctx, tx, ty, trackW, trackH, trackH / 2, track);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(tx + trackH / 2, ty + 1);
+        ctx.lineTo(tx + trackW - trackH / 2, ty + 1);
+        ctx.stroke();
+        ctx.restore();
         const knobR = trackH / 2 - sz(2);
         const knobX = row.value ? tx + trackW - trackH / 2 : tx + trackH / 2;
+        ctx.save();
+        ctx.shadowColor = 'rgba(40, 80, 120, 0.28)';
+        ctx.shadowBlur = sz(5);
+        ctx.shadowOffsetY = sz(1.5);
         fillCircle(ctx, knobX, ty + trackH / 2, knobR, '#ffffff');
+        ctx.restore();
       } else if (row.type === 'value') {
         drawText(ctx, row.value, row.x + row.w - sz(28), row.y + row.h / 2, {
           font: font(sz(11), '500'),

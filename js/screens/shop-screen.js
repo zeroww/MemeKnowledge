@@ -1,15 +1,19 @@
 import { SKINS } from '../data/skins.js';
 import { RIGHT_SAFE_X, SCREEN_HEIGHT, SAFE_BOTTOM, sz } from '../render.js';
+import { drawCoinPill } from '../ui/badges.js';
 import Button from '../ui/button.js';
 import Modal from '../ui/modal.js';
+import { drawIconTile } from '../ui/icons.js';
 import {
   drawCoin,
   drawPill,
   drawText,
+  drawTopSheen,
   fillCircle,
   fillRoundRect,
   font,
   hexToRgba,
+  mixHex,
   strokeRoundRect,
 } from '../ui/draw.js';
 import BaseScreen from './base-screen.js';
@@ -45,7 +49,9 @@ export default class ShopScreen extends BaseScreen {
       y: top,
       w: sz(34),
       h: sz(34),
-      label: '←',
+      label: '',
+      icon: '←',
+      iconName: 'back',
       style: 'dark',
       fontSize: sz(16),
       onClick: () => this.app.goHome(),
@@ -74,16 +80,20 @@ export default class ShopScreen extends BaseScreen {
     const buttons = [];
 
     if (equipped) {
-      buttons.push({ label: '使用中', style: 'primary', disabled: true });
+      buttons.push({ label: '使用中', icon: '✓', iconName: 'check', style: 'primary', disabled: true });
     } else if (owned) {
       buttons.push({
         label: '装备',
+        icon: '✓',
+        iconName: 'check',
         style: 'primary',
         onClick: () => this.equipSkin(skin),
       });
     } else {
       buttons.push({
         label: `购买并装备 · ${priceText}`,
+        icon: '🛒',
+        iconName: 'cart',
         style: 'gold',
         disabled: this.profile.coins < skin.price,
         onClick: () => this.buySkin(skin),
@@ -92,7 +102,7 @@ export default class ShopScreen extends BaseScreen {
     buttons.push({ label: '关闭', style: 'ghost' });
 
     this.modal.show({
-      title: `${skin.emoji} ${skin.name}`,
+      title: skin.name,
       message: `${skin.desc}\n\n价格：${priceText}\n\n皮肤只改变背景与强调色，不提供答题优势。`,
       buttons,
     });
@@ -143,13 +153,7 @@ export default class ShopScreen extends BaseScreen {
 
     const coinW = sz(84);
     const coinX = RIGHT_SAFE_X - coinW;
-    fillRoundRect(ctx, coinX, top + sz(2), coinW, sz(28), sz(14), hexToRgba(theme.panel, 0.88));
-    drawCoin(ctx, coinX + sz(15), top + sz(16), sz(9), theme.accent);
-    drawText(ctx, String(this.profile.coins), coinX + sz(30), top + sz(16), {
-      font: font(sz(14), '800'),
-      color: theme.text,
-      baseline: 'middle',
-    });
+    drawCoinPill(ctx, coinX, top + sz(2), coinW, sz(28), this.profile.coins);
 
     drawText(ctx, '主题皮肤', x, gridY - sz(14), {
       font: font(sz(12), '700'),
@@ -181,62 +185,82 @@ export default class ShopScreen extends BaseScreen {
     const owned = this.profile.ownedSkins.includes(skin.id);
     const equipped = this.profile.equippedSkin === skin.id;
 
-    const gradient = ctx.createLinearGradient(card.x, card.y, card.x + card.w, card.y + card.h);
-    gradient.addColorStop(0, skinTheme.bgTop);
-    gradient.addColorStop(1, skinTheme.bgBottom);
-    fillRoundRect(ctx, card.x, card.y, card.w, card.h, sz(14), gradient);
+    const cardTop = mixHex(skinTheme.bgTop, '#ffffff', 0.62);
+    const cardBottom = mixHex(skinTheme.bgBottom, '#ffffff', 0.24);
+    const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.h);
+    gradient.addColorStop(0, cardTop);
+    gradient.addColorStop(1, cardBottom);
+    ctx.save();
+    ctx.shadowColor = 'rgba(58, 122, 180, 0.2)';
+    ctx.shadowBlur = sz(14);
+    ctx.shadowOffsetY = sz(5);
+    fillRoundRect(ctx, card.x, card.y, card.w, card.h, sz(18), gradient);
+    ctx.restore();
+    drawTopSheen(ctx, card.x, card.y, card.w, card.h, sz(18), 0.45);
     strokeRoundRect(
       ctx,
       card.x,
       card.y,
       card.w,
       card.h,
-      sz(14),
-      equipped ? skinTheme.accent : hexToRgba(skinTheme.line, 0.9),
-      equipped ? 2 : 1
+      sz(18),
+      equipped ? hexToRgba(skinTheme.primary, 0.9) : 'rgba(255,255,255,0.9)',
+      equipped ? sz(2.4) : sz(1.6)
     );
 
-    fillCircle(ctx, card.x + card.w - sz(18), card.y + sz(18), sz(24), hexToRgba(skinTheme.primary, 0.18));
-    fillCircle(ctx, card.x + sz(16), card.y + card.h - sz(18), sz(18), hexToRgba(skinTheme.accent, 0.12));
+    fillCircle(
+      ctx,
+      card.x + card.w - sz(16),
+      card.y + card.h - sz(26),
+      sz(28),
+      hexToRgba(skinTheme.primary, 0.1)
+    );
 
-    drawText(ctx, skin.emoji, card.x + card.w / 2, card.y + sz(38), {
-      font: font(sz(30), '400'),
-      color: '#ffffff',
-      align: 'center',
-      baseline: 'middle',
-    });
-    drawText(ctx, skin.name, card.x + sz(12), card.y + sz(68), {
+    const tileSize = sz(52);
+    drawIconTile(
+      ctx,
+      skin.icon || 'spark',
+      card.x + (card.w - tileSize) / 2,
+      card.y + sz(12),
+      tileSize,
+      tileSize,
+      { radius: sz(15), iconScale: 0.62 }
+    );
+
+    drawText(ctx, skin.name, card.x + sz(12), card.y + sz(76), {
       font: font(sz(15), '800'),
-      color: skinTheme.text,
+      color: '#1f4e9c',
       baseline: 'middle',
     });
-    drawText(ctx, skin.desc, card.x + sz(12), card.y + sz(88), {
-      font: font(sz(9), '400'),
-      color: hexToRgba(skinTheme.muted, 0.95),
+    drawText(ctx, skin.desc, card.x + sz(12), card.y + sz(95), {
+      font: font(sz(9), '500'),
+      color: '#6b8fb4',
       baseline: 'middle',
     });
 
     if (equipped) {
       drawPill(ctx, '使用中', card.x + sz(12), card.y + card.h - sz(16), {
-        fontStr: font(sz(9), '700'),
-        color: skinTheme.accent,
-        bg: hexToRgba(skinTheme.accent, 0.16),
-        height: sz(17),
-        padX: sz(7),
+        fontStr: font(sz(9), '800'),
+        color: '#ffffff',
+        bg: skinTheme.primary,
+        border: 'rgba(255,255,255,0.6)',
+        height: sz(18),
+        padX: sz(8),
       });
     } else if (owned) {
       drawPill(ctx, '已拥有', card.x + sz(12), card.y + card.h - sz(16), {
-        fontStr: font(sz(9), '700'),
-        color: skinTheme.success,
-        bg: hexToRgba(skinTheme.success, 0.14),
-        height: sz(17),
-        padX: sz(7),
+        fontStr: font(sz(9), '800'),
+        color: '#ffffff',
+        bg: '#3a97f7',
+        border: 'rgba(255,255,255,0.6)',
+        height: sz(18),
+        padX: sz(8),
       });
     } else {
-      drawCoin(ctx, card.x + card.w - sz(34), card.y + card.h - sz(16), sz(8), skinTheme.accent);
+      drawCoin(ctx, card.x + card.w - sz(62), card.y + card.h - sz(16), sz(9), '#ffc531');
       drawText(ctx, String(skin.price), card.x + card.w - sz(12), card.y + card.h - sz(16), {
-        font: font(sz(12), '800'),
-        color: skinTheme.text,
+        font: font(sz(13), '800'),
+        color: '#c88a00',
         align: 'right',
         baseline: 'middle',
       });

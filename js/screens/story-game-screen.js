@@ -18,12 +18,17 @@ import {
 } from '../services/assets.js';
 import {
   clamp,
-  drawGlassPanel,
+  drawCandyPanel,
+  drawCheckMark,
+  drawCrossMark,
   drawPill,
   drawText,
+  drawTopSheen,
   fillRoundRect,
+  fillRoundRectGradient,
   font,
   hexToRgba,
+  strokeRoundRect,
   wrapText,
 } from '../ui/draw.js';
 import { renderLives } from '../ui/life-bar.js';
@@ -65,7 +70,7 @@ export default class StoryGameScreen extends GameScreen {
     const w = CONTENT_WIDTH - sz(24);
     const top = SAFE_TOP + sz(10);
     const compact = SCREEN_HEIGHT < 700;
-    const hudBottom = top + (compact ? sz(54) : sz(60));
+    const hudBottom = top + (compact ? sz(76) : sz(78));
     const actionH = compact ? sz(38) : sz(42);
     const actionTop = SCREEN_HEIGHT - SAFE_BOTTOM - sz(12) - actionH;
 
@@ -96,11 +101,26 @@ export default class StoryGameScreen extends GameScreen {
       this.optionRects.push({ x: cardX, y: cardY, w: cardW, h: cardH, card });
     });
 
-    const bubbleH = compact ? sz(132) : sz(150);
+    const textFontSize = clamp((w - sz(32)) * 0.05, sz(11.5), sz(14.5));
+    const textLineHeight = textFontSize * 1.42;
+    measureCtx.font = font(textFontSize, '700');
+    const stemLines = wrapText(measureCtx, question.stem, w - sz(34), 4);
+    const visualH = question.type === 'image' && question.visual ? sz(42) : 0;
+    const neededH = sz(50) + stemLines.length * textLineHeight + visualH + sz(8);
+    const bubbleH = clamp(
+      neededH,
+      compact ? sz(112) : sz(120),
+      compact ? sz(160) : sz(180)
+    );
     const bubbleY = optionsTop - bubbleH - sz(8);
     const bubbleRect = { x, y: bubbleY, w, h: bubbleH };
 
-    const heroH = compact ? sz(230) : sz(240);
+    const hudReserve = top + sz(76);
+    const heroMaxH = compact ? sz(230) : sz(240);
+    const heroH = Math.max(
+      sz(160),
+      Math.min(heroMaxH, bubbleY + sz(28) - hudReserve)
+    );
     const heroW = heroH * 0.5;
     const heroRect = {
       x: x + sz(4),
@@ -109,7 +129,11 @@ export default class StoryGameScreen extends GameScreen {
       h: heroH,
     };
 
-    const opponentH = compact ? sz(180) : sz(210);
+    const opponentMaxH = compact ? sz(180) : sz(210);
+    const opponentH = Math.max(
+      sz(120),
+      Math.min(opponentMaxH, bubbleY + sz(28) - hudReserve)
+    );
     const askAspect = this.level && this.level.askAspect ? this.level.askAspect : 639 / 598;
     const opponentW = opponentH * askAspect;
     const opponentRect = {
@@ -119,8 +143,8 @@ export default class StoryGameScreen extends GameScreen {
       h: opponentH,
     };
 
-    this.timerRing.setCenter(RIGHT_SAFE_X - sz(28), top + sz(28), sz(22));
-    this.pauseButton.setRect(x, top, sz(32), sz(32));
+    this.timerRing.setCenter(RIGHT_SAFE_X - sz(24), top + sz(30), sz(21));
+    this.pauseButton.setRect(x - sz(1), top - sz(2), sz(30), sz(30));
 
     this.layout = {
       x,
@@ -170,9 +194,9 @@ export default class StoryGameScreen extends GameScreen {
     }
 
     const overlay = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    overlay.addColorStop(0, 'rgba(7, 9, 13, 0.5)');
-    overlay.addColorStop(0.55, 'rgba(7, 9, 13, 0.6)');
-    overlay.addColorStop(1, 'rgba(7, 9, 13, 0.9)');
+    overlay.addColorStop(0, 'rgba(14, 38, 86, 0.14)');
+    overlay.addColorStop(0.5, 'rgba(12, 30, 70, 0.18)');
+    overlay.addColorStop(1, 'rgba(8, 18, 46, 0.56)');
     ctx.fillStyle = overlay;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
@@ -203,45 +227,81 @@ export default class StoryGameScreen extends GameScreen {
   }
 
   renderStoryHud(ctx, theme) {
-    const { x, w, top, hudBottom } = this.layout;
+    const { x, w, top } = this.layout;
+    const hud = {
+      x: x - sz(4),
+      y: top - sz(5),
+      w: w + sz(8),
+      h: sz(80),
+    };
+
+    drawCandyPanel(ctx, hud.x, hud.y, hud.w, hud.h, sz(22), {
+      headerHeight: sz(30),
+      headerColor: 'rgba(214, 241, 255, 0.95)',
+      border: '#bfe4f8',
+      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      shadowBlur: sz(18),
+      shadowOffsetY: sz(6),
+      glossAlpha: 0.5,
+    });
 
     this.pauseButton.render(ctx, theme);
 
-    drawText(ctx, this.level ? this.level.title : '剧情关卡', x + sz(40), top + sz(6), {
-      font: font(sz(12), '800'),
-      color: '#ffffff',
-      baseline: 'top',
-    });
     drawText(
       ctx,
-      `题目 ${this.run.index + 1} / ${this.run.totalQuestions}`,
-      x + sz(40),
-      top + sz(25),
+      this.level ? this.level.title : '剧情关卡',
+      x + sz(44),
+      top + sz(8),
       {
-        font: font(sz(10), '600'),
-        color: 'rgba(255,255,255,0.72)',
+        font: font(sz(13), '800'),
+        color: '#1f4e9c',
+        baseline: 'top',
+      }
+    );
+    drawText(
+      ctx,
+      `第 ${this.run.index + 1} / ${this.run.totalQuestions} 题`,
+      x + sz(44),
+      top + sz(38),
+      {
+        font: font(sz(10), '700'),
+        color: '#5b8ec0',
         baseline: 'top',
       }
     );
 
-    const barX = x + sz(40);
-    const barY = hudBottom - sz(10);
-    const barW = Math.min(sz(150), w * 0.42);
-    fillRoundRect(ctx, barX, barY, barW, sz(3), sz(2), 'rgba(255,255,255,0.18)');
+    const barX = x + sz(44);
+    const barY = top + sz(54);
+    const barW = Math.min(sz(90), w * 0.32);
+    fillRoundRect(ctx, barX, barY, barW, sz(5), sz(2.5), '#dceffb');
     fillRoundRect(
       ctx,
       barX,
       barY,
-      Math.max(sz(3), (barW * (this.run.index + 1)) / this.run.totalQuestions),
-      sz(3),
-      sz(2),
-      theme.accent
+      Math.max(sz(5), (barW * (this.run.index + 1)) / this.run.totalQuestions),
+      sz(5),
+      sz(2.5),
+      '#35b84a'
     );
+    renderLives(ctx, x + sz(44), top + sz(66), this.run.lives, 3, theme, sz(11), sz(4));
 
     this.timerRing.render(ctx, theme, this.remainingSec, this.totalSec, this.time);
-    drawText(ctx, `得分 ${this.run.score}`, RIGHT_SAFE_X - sz(28), top + sz(54), {
-      font: font(sz(10), '700'),
-      color: theme.accent,
+
+    const scoreW = sz(70);
+    const scoreX = RIGHT_SAFE_X - scoreW;
+    const scoreY = top + sz(54);
+    fillRoundRect(
+      ctx,
+      scoreX,
+      scoreY,
+      scoreW,
+      sz(18),
+      sz(9),
+      'rgba(255, 197, 49, 0.22)'
+    );
+    drawText(ctx, `得分 ${this.run.score}`, scoreX + scoreW / 2, scoreY + sz(9), {
+      font: font(sz(10.5), '800'),
+      color: '#c88a00',
       align: 'center',
       baseline: 'middle',
     });
@@ -342,7 +402,7 @@ export default class StoryGameScreen extends GameScreen {
     measureCtx.font = font(fontSize, '700');
     const lines = wrapText(measureCtx, question.stem, content.w, maxLines);
     ctx.font = font(fontSize, '700');
-    ctx.fillStyle = '#f7f2e7';
+    ctx.fillStyle = '#1f4e9c';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     lines.forEach((line, index) => {
@@ -351,8 +411,8 @@ export default class StoryGameScreen extends GameScreen {
 
     if (hasHint) {
       const hintY = content.y + content.h - hintH;
-      fillRoundRect(ctx, content.x, hintY, content.w, hintH, sz(6), 'rgba(225, 58, 47, 0.14)');
-      ctx.fillStyle = hexToRgba(theme.danger, 0.8);
+      fillRoundRect(ctx, content.x, hintY, content.w, hintH, sz(6), 'rgba(255, 213, 74, 0.22)');
+      ctx.fillStyle = '#b77900';
       ctx.fillRect(content.x, hintY + sz(4), sz(2), hintH - sz(8));
       drawText(ctx, '提示', content.x + sz(7), hintY + sz(4), {
         font: font(sz(8), '800'),
@@ -368,7 +428,7 @@ export default class StoryGameScreen extends GameScreen {
         Math.max(1, Math.floor((hintH - sz(14)) / (hintFont * 1.3)))
       );
       ctx.font = font(hintFont, '500');
-      ctx.fillStyle = 'rgba(247,242,231,0.78)';
+      ctx.fillStyle = 'rgba(75, 58, 24, 0.88)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       hintLines.forEach((line, index) => {
@@ -378,7 +438,7 @@ export default class StoryGameScreen extends GameScreen {
 
     if (isImage) {
       const visualY = content.y + content.h - visualH;
-      fillRoundRect(ctx, content.x, visualY, content.w, visualH, sz(6), 'rgba(255,255,255,0.06)');
+      fillRoundRect(ctx, content.x, visualY, content.w, visualH, sz(6), 'rgba(230, 244, 255, 0.85)');
       const visual = question.visual;
       const emojiSize = Math.min(sz(24), content.w * 0.08);
       const emojis = visual.emojis && visual.emojis.length ? visual.emojis : ['🎭'];
@@ -394,7 +454,7 @@ export default class StoryGameScreen extends GameScreen {
       });
       if (visual.caption) {
         ctx.font = font(Math.max(8, fontSize * 0.7), '500');
-        ctx.fillStyle = 'rgba(247,242,231,0.6)';
+        ctx.fillStyle = '#7fa3c6';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(visual.caption, content.x + content.w / 2, visualY + visualH * 0.76);
@@ -412,53 +472,67 @@ export default class StoryGameScreen extends GameScreen {
     const title = isCorrect ? '答对了！' : this.feedback.timeout ? '超时了' : '答错了';
     const color = isCorrect ? theme.success : theme.danger;
 
-    drawGlassPanel(
-      ctx,
-      bubbleRect.x,
-      bubbleRect.y,
-      bubbleRect.w,
-      bubbleRect.h,
-      sz(16),
-      theme,
-      0.97
-    );
-    ctx.fillStyle = hexToRgba(color, 0.24);
-    ctx.fillRect(bubbleRect.x, bubbleRect.y, sz(4), bubbleRect.h);
+    drawCandyPanel(ctx, bubbleRect.x, bubbleRect.y, bubbleRect.w, bubbleRect.h, sz(20), {
+      fill: '#ffffff',
+      fillBottom: '#eefaff',
+      border: color,
+      borderAlpha: 0.55,
+      shadowColor: hexToRgba(color, 0.26),
+      shadowBlur: sz(18),
+      shadowOffsetY: sz(7),
+      glossAlpha: 0.45,
+      lineWidth: 2,
+    });
 
-    drawText(ctx, title, bubbleRect.x + sz(16), bubbleRect.y + sz(14), {
-      font: font(sz(17), '800'),
+    fillRoundRect(
+      ctx,
+      bubbleRect.x + sz(12),
+      bubbleRect.y + sz(12),
+      sz(28),
+      sz(28),
+      sz(10),
+      color
+    );
+    if (isCorrect) {
+      drawCheckMark(ctx, bubbleRect.x + sz(26), bubbleRect.y + sz(26), sz(15), '#ffffff', sz(3));
+    } else {
+      drawCrossMark(ctx, bubbleRect.x + sz(26), bubbleRect.y + sz(26), sz(14), '#ffffff', sz(3));
+    }
+
+    drawText(ctx, title, bubbleRect.x + sz(48), bubbleRect.y + sz(14), {
+      font: font(sz(17), '900'),
       color,
       baseline: 'top',
     });
     if (isCorrect) {
-      drawText(ctx, `+${this.feedback.gained || 0} 分`, bubbleRect.x + bubbleRect.w - sz(16), bubbleRect.y + sz(16), {
-        font: font(sz(13), '800'),
-        color: theme.accent,
+      drawText(ctx, `+${this.feedback.gained || 0} 分`, bubbleRect.x + bubbleRect.w - sz(14), bubbleRect.y + sz(16), {
+        font: font(sz(13), '900'),
+        color: '#c88a00',
         align: 'right',
         baseline: 'top',
       });
     } else {
-      drawText(ctx, `正确答案：${this.feedback.answerText}`, bubbleRect.x + sz(16), bubbleRect.y + sz(38), {
-        font: font(sz(11), '700'),
-        color: theme.text,
+      drawText(ctx, `正确答案：${this.feedback.answerText}`, bubbleRect.x + sz(14), bubbleRect.y + sz(44), {
+        font: font(sz(10.5), '800'),
+        color: '#1f4e9c',
         baseline: 'top',
       });
     }
 
-    measureCtx.font = font(sz(11), '400');
+    measureCtx.font = font(sz(10.5), '500');
     const explanationLines = wrapText(
       measureCtx,
       this.feedback.explanation || '',
-      bubbleRect.w - sz(32),
+      bubbleRect.w - sz(28),
       2
     );
-    ctx.font = font(sz(11), '400');
-    ctx.fillStyle = hexToRgba(theme.text, 0.82);
+    ctx.font = font(sz(10.5), '500');
+    ctx.fillStyle = 'rgba(74, 108, 146, 0.9)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    const explanationTop = isCorrect ? bubbleRect.y + sz(38) : bubbleRect.y + sz(58);
+    const explanationTop = isCorrect ? bubbleRect.y + sz(44) : bubbleRect.y + sz(64);
     explanationLines.forEach((line, index) => {
-      ctx.fillText(line, bubbleRect.x + sz(16), explanationTop + index * sz(16));
+      ctx.fillText(line, bubbleRect.x + sz(14), explanationTop + index * sz(15));
     });
 
     const footer =
@@ -467,11 +541,20 @@ export default class StoryGameScreen extends GameScreen {
         : this.run.status === RUN_PHASE.FINISHED
           ? '点击进入结算'
           : '点击继续';
-    drawText(ctx, footer, bubbleRect.x + bubbleRect.w - sz(16), bubbleRect.y + bubbleRect.h - sz(12), {
-      font: font(sz(10), '600'),
-      color: hexToRgba(theme.muted, 0.95),
-      align: 'right',
-      baseline: 'bottom',
-    });
+    drawPill(
+      ctx,
+      footer,
+      bubbleRect.x + bubbleRect.w - sz(12),
+      bubbleRect.y + bubbleRect.h - sz(15),
+      {
+        fontStr: font(sz(9.5), '800'),
+        color: '#ffffff',
+        bg: color,
+        border: 'rgba(255,255,255,0.28)',
+        height: sz(21),
+        padX: sz(9),
+        align: 'right',
+      }
+    );
   }
 }

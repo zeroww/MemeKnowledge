@@ -1,17 +1,21 @@
 import { AD_PLACEMENT, SCORE } from '../core/types.js';
-import { getLevelById, getNextLevel } from '../data/levels.js';
-import { SAFE_BOTTOM, SCREEN_HEIGHT, sz } from '../render.js';
+import { getLevelById } from '../data/levels.js';
+import { SAFE_BOTTOM, SCREEN_HEIGHT, SCREEN_WIDTH, sz } from '../render.js';
 import * as api from '../services/api.js';
 import Button from '../ui/button.js';
+import { drawIcon } from '../ui/icons.js';
 import {
+  drawCandyPanel,
   drawCoin,
   drawGlassPanel,
+  drawPill,
   drawStar,
   drawText,
   fillRoundRect,
   font,
   formatDuration,
   hexToRgba,
+  strokeRoundRect,
 } from '../ui/draw.js';
 import BaseScreen from './base-screen.js';
 
@@ -133,10 +137,7 @@ export default class ResultScreen extends BaseScreen {
       return;
     }
 
-    const daily = this.app.databus.ensureDaily();
-    const dailyBonus =
-      run.mode === 'daily' && run.isFinished && !daily.rewarded ? SCORE.DAILY_WIN_COIN_BONUS : 0;
-
+    const dailyBonus = 0;
     const claim = await api.claimRun(run, { dailyBonus });
     if (claim.ok) {
       this.claim = claim;
@@ -176,15 +177,6 @@ export default class ResultScreen extends BaseScreen {
         adCount: claim.adWatched,
         abandoned: run.isAbandoned,
       });
-      if (run.mode === 'daily') {
-        this.app.analytics.track('daily_finish', {
-          dateKey: daily.dateKey,
-          attempt: daily.attempts,
-          score: claim.score,
-          win: claim.win,
-          coins: claim.totalCoins,
-        });
-      }
       this.app.databus.clearSnapshot();
     } else if (claim.code === 'ALREADY_CLAIMED') {
       const record = this.app.databus.getClaimedRun(run.id);
@@ -215,7 +207,7 @@ export default class ResultScreen extends BaseScreen {
     const top = this.top + sz(18);
     const summaryY = top + sz(166);
     const summaryH = sz(142);
-    const buttonStart = summaryY + summaryH + sz(16);
+    const buttonStart = summaryY + summaryH + sz(36);
     const gap = sz(9);
     const canDouble =
       this.claim &&
@@ -238,7 +230,8 @@ export default class ResultScreen extends BaseScreen {
             label: '看广告 · 梗币 ×2',
             subLabel: '本关仅一次，不影响排行榜分数',
             icon: '📺',
-            style: 'gold',
+            iconName: 'tv',
+            style: 'candyBlue',
             disabled: this.doubling,
             onClick: () => this.watchDoubleAd(),
           })
@@ -258,7 +251,8 @@ export default class ResultScreen extends BaseScreen {
               ? `${this.level.title} 已完成`
               : `${this.level.title} · 挑战失败`,
           icon: '🗺️',
-          style: 'primary',
+          iconName: 'map',
+          style: 'candyGreen',
           onClick: () => this.app.showScreen('map'),
         })
       );
@@ -273,7 +267,8 @@ export default class ResultScreen extends BaseScreen {
           h: sz(46),
           label: '重玩本关',
           icon: '🔄',
-          style: 'secondary',
+          iconName: 'replay',
+          style: 'candyOrange',
           fontSize: sz(11),
           onClick: () =>
             this.app.showScreen('levelIntro', {
@@ -290,6 +285,7 @@ export default class ResultScreen extends BaseScreen {
           h: sz(46),
           label: '返回首页',
           icon: '🏠',
+          iconName: 'home',
           style: 'secondary',
           fontSize: sz(11),
           onClick: () => {
@@ -306,7 +302,8 @@ export default class ResultScreen extends BaseScreen {
           h: sz(46),
           label: '分享',
           icon: '📤',
-          style: 'ghost',
+          iconName: 'share',
+          style: 'candyPurple',
           fontSize: sz(11),
           onClick: () => this.app.shareScore(this.run.score),
         })
@@ -316,24 +313,10 @@ export default class ResultScreen extends BaseScreen {
       return;
     }
 
-    const dailyInfo = this.app.databus.getDailyInfo();
-    let againLabel = '再来一局';
-    let againSub = this.run.mode === 'daily' ? '继续每日挑战' : '重新抽 10 题';
-    let againDisabled = false;
-    let againAction = () => this.app.startClassicRun();
-
-    if (this.run.mode === 'daily') {
-      if (dailyInfo.exhausted) {
-        againLabel = '今日挑战已完成';
-        againSub = '明天再来';
-        againDisabled = true;
-        againAction = () => {};
-      } else {
-        againLabel = '再挑战';
-        againSub = dailyInfo.freeAvailable ? '免费 1 次' : '看广告 1 次';
-        againAction = () => this.app.requestDailyRun();
-      }
-    }
+    const againLabel = '再来一局';
+    const againSub = '重新抽 10 题';
+    const againDisabled = false;
+    const againAction = () => this.app.startClassicRun();
 
     let y = buttonStart;
     this.buttons = [];
@@ -348,7 +331,8 @@ export default class ResultScreen extends BaseScreen {
           label: '看广告 · 梗币 ×2',
           subLabel: '本局仅一次，不影响排行榜分数',
           icon: '📺',
-          style: 'gold',
+          iconName: 'tv',
+          style: 'candyBlue',
           disabled: this.doubling,
           onClick: () => this.watchDoubleAd(),
         })
@@ -365,7 +349,8 @@ export default class ResultScreen extends BaseScreen {
         label: againLabel,
         subLabel: againSub,
         icon: '🔄',
-        style: 'primary',
+        iconName: 'replay',
+        style: 'candyOrange',
         disabled: againDisabled,
         onClick: againAction,
       })
@@ -381,7 +366,8 @@ export default class ResultScreen extends BaseScreen {
         h: sz(46),
         label: '返回首页',
         icon: '🏠',
-        style: 'secondary',
+        iconName: 'home',
+        style: 'ghost',
         onClick: () => {
           this.app.goHome();
           this.app.maybeShowInterstitial();
@@ -396,7 +382,8 @@ export default class ResultScreen extends BaseScreen {
         h: sz(46),
         label: '分享成绩',
         icon: '📤',
-        style: 'ghost',
+        iconName: 'share',
+        style: 'candyPurple',
         onClick: () => this.app.shareScore(this.run.score),
       })
     );
@@ -483,20 +470,26 @@ export default class ResultScreen extends BaseScreen {
     const win = this.claim.win;
     const isLevel = this.run.mode === 'level' && !!this.level;
 
+    if (win) this.renderConfetti(ctx, theme);
+
     if (isLevel) {
-      drawText(ctx, this.level.title, x + w / 2, top + sz(2), {
-        font: font(sz(10), '700'),
-        color: theme.accent,
+      drawPill(ctx, this.level.title, x + w / 2, top + sz(8), {
+        fontStr: font(sz(9), '800'),
+        color: '#ff8a3d',
+        bg: 'rgba(255,138,61,0.12)',
+        border: 'rgba(255,138,61,0.26)',
+        height: sz(18),
+        padX: sz(9),
         align: 'center',
-        baseline: 'top',
       });
     }
 
-    drawStar(ctx, x + w / 2, top + sz(20), sz(7), sz(3), 5, hexToRgba(theme.accent, 0.6));
+    drawStar(ctx, x + w / 2 - sz(54), top + sz(22), sz(7), sz(3), 5, hexToRgba(theme.accent, 0.75));
+    drawStar(ctx, x + w / 2 + sz(54), top + sz(20), sz(5), sz(2), 5, hexToRgba(theme.accent, 0.55));
 
     drawText(ctx, win ? (isLevel ? '关卡完成' : '通关！') : isLevel ? '挑战失败' : '出局', x + w / 2, top + sz(26), {
-      font: font(sz(32), '900'),
-      color: win ? theme.accent : theme.danger,
+      font: font(sz(30), '900'),
+      color: win ? '#1f4e9c' : theme.danger,
       align: 'center',
       baseline: 'top',
     });
@@ -504,7 +497,9 @@ export default class ResultScreen extends BaseScreen {
       ctx,
       isLevel
         ? win
-          ? `${this.level.title} 已通过，校园地图已解锁`
+          ? this.level.id === 4
+            ? '图书馆的门开了，你终于找到回去的路'
+            : `${this.level.title} 已通过，校园地图已解锁`
           : `${this.level.title} · 差一点就过关了`
         : win
           ? '你成功活到了最后，梗王非你莫属'
@@ -519,28 +514,39 @@ export default class ResultScreen extends BaseScreen {
       }
     );
 
-    drawGlassPanel(ctx, x, top + sz(92), w, sz(62), sz(16), theme, 0.86);
-    drawText(ctx, String(this.claim.score), x + w / 2, top + sz(114), {
-      font: font(sz(40), '900'),
-      color: theme.text,
+    const scoreCardY = top + sz(92);
+    drawCandyPanel(ctx, x, scoreCardY, w, sz(64), sz(20), {
+      fill: '#ffffff',
+      fillBottom: '#eaf9ff',
+      border: '#bfe4f8',
+      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      shadowBlur: sz(18),
+      shadowOffsetY: sz(7),
+      glossAlpha: 0.5,
+    });
+    drawIcon(ctx, win ? 'trophy' : 'heart', x + sz(40), scoreCardY + sz(32), sz(46));
+    drawText(ctx, String(this.claim.score), x + w / 2 + sz(16), scoreCardY + sz(25), {
+      font: font(sz(36), '900'),
+      color: '#1f4e9c',
       align: 'center',
       baseline: 'middle',
     });
-    drawText(ctx, '得分 / 满分 280', x + w / 2, top + sz(142), {
-      font: font(sz(10), '500'),
-      color: theme.muted,
+    drawText(ctx, '得分 / 满分 280', x + w / 2 + sz(16), scoreCardY + sz(49), {
+      font: font(sz(9), '600'),
+      color: '#7fa3c6',
       align: 'center',
       baseline: 'middle',
     });
 
     if (this.isNewBest) {
-      const badgeW = sz(82);
-      fillRoundRect(ctx, x + w - badgeW - sz(8), top + sz(98), badgeW, sz(20), sz(10), hexToRgba(theme.accent, 0.2));
-      drawText(ctx, '新纪录', x + w - badgeW / 2 - sz(8), top + sz(108), {
-        font: font(sz(10), '800'),
-        color: theme.accent,
-        align: 'center',
-        baseline: 'middle',
+      drawPill(ctx, '新纪录', x + w - sz(12), scoreCardY + sz(16), {
+        fontStr: font(sz(9), '800'),
+        color: '#ffffff',
+        bg: '#ffb400',
+        border: 'rgba(255,255,255,0.7)',
+        height: sz(20),
+        padX: sz(9),
+        align: 'right',
       });
     }
 
@@ -567,25 +573,37 @@ export default class ResultScreen extends BaseScreen {
     });
 
     // 梗币
-    const coinY = summaryY + summaryH + sz(12);
-    drawCoin(ctx, x + sz(14), coinY, sz(10), theme.accent);
-    drawText(ctx, `梗币 +${this.totalCoins}`, x + sz(30), coinY, {
+    const coinY = summaryY + summaryH + sz(11);
+    const coinPanelH = sz(30);
+    fillRoundRect(
+      ctx,
+      x,
+      coinY - coinPanelH / 2,
+      w,
+      coinPanelH,
+      coinPanelH / 2,
+      'rgba(255,255,255,0.94)'
+    );
+    strokeRoundRect(
+      ctx,
+      x,
+      coinY - coinPanelH / 2,
+      w,
+      coinPanelH,
+      coinPanelH / 2,
+      '#bfe4f8',
+      1
+    );
+    drawCoin(ctx, x + sz(18), coinY, sz(10), theme.accent);
+    drawText(ctx, `梗币 +${this.totalCoins}`, x + sz(36), coinY, {
       font: font(sz(15), '800'),
-      color: theme.accent,
+      color: '#ff8a3d',
       baseline: 'middle',
     });
-    if (this.dailyBonus > 0) {
-      drawText(ctx, `含每日首胜 +${this.dailyBonus}`, x + w - sz(16), coinY, {
-        font: font(sz(10), '500'),
-        color: theme.success,
-        align: 'right',
-        baseline: 'middle',
-      });
-    }
     if (this.alreadyClaimed) {
-      drawText(ctx, '奖励已领取', x + w - sz(16), coinY - sz(16), {
-        font: font(sz(10), '500'),
-        color: theme.muted,
+      drawText(ctx, '奖励已领取', x + w - sz(16), coinY, {
+        font: font(sz(10), '600'),
+        color: '#7fa3c6',
         align: 'right',
         baseline: 'middle',
       });
@@ -593,29 +611,32 @@ export default class ResultScreen extends BaseScreen {
 
     for (const button of this.buttons) button.render(ctx, theme);
 
-    const nextLevel = isLevel ? getNextLevel(this.level.id) : null;
-    let footer = '分享仅用于晒成绩，不提供任何奖励';
-    if (isLevel) {
-      if (!win) {
-        footer = '关卡进度与梗币已保存；可在地图中重试本章';
-      } else if (nextLevel && nextLevel.available) {
-        footer = `下一章「${nextLevel.name}」已解锁，可在地图继续`;
-      } else {
-        footer = '关卡进度与梗币已保存；更多章节敬请期待';
-      }
+  }
+
+  renderConfetti(ctx, theme) {
+    const colors = [theme.accent, theme.primary, '#ffffff', theme.success];
+    const count = 18;
+    for (let i = 0; i < count; i += 1) {
+      const seed = i * 37 + 11;
+      const x = (((seed * 53) % 100) / 100) * SCREEN_WIDTH;
+      const y = ((seed * 71 + this.time * 22) % 190) - sz(10);
+      const size = sz(2.4 + (i % 3) * 1.4);
+      const alpha = 0.2 + (i % 4) * 0.07;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(x, y);
+      ctx.rotate((seed % 10) * 0.35 + this.time * 0.4);
+      fillRoundRect(
+        ctx,
+        -size / 2,
+        -size / 2,
+        size,
+        size * 2.2,
+        size * 0.35,
+        colors[i % colors.length]
+      );
+      ctx.restore();
     }
-    drawText(
-      ctx,
-      footer,
-      this.contentX + this.contentW / 2,
-      this.bottom - sz(14),
-      {
-        font: font(sz(10), '400'),
-        color: hexToRgba(theme.muted, 0.7),
-        align: 'center',
-        baseline: 'middle',
-      }
-    );
   }
 
   onTouchStart(x, y) {

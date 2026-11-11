@@ -5,7 +5,6 @@ import {
   DIFFICULTY_LABEL,
   FEEDBACK_MS,
   RUN_PHASE,
-  TYPE_ICON,
   TYPE_LABEL,
 } from '../core/types.js';
 import RunTimer from '../core/run-timer.js';
@@ -25,16 +24,21 @@ import Button from '../ui/button.js';
 import { renderBossBanner } from '../ui/boss-banner.js';
 import {
   clamp,
-  drawGlassPanel,
+  drawCandyPanel,
+  drawCheckMark,
+  drawCrossMark,
   drawPill,
   drawText,
+  drawTopSheen,
   fillRoundRect,
+  fillRoundRectGradient,
   font,
   hexToRgba,
   strokeRoundRect,
   wrapText,
 } from '../ui/draw.js';
 import { renderLives } from '../ui/life-bar.js';
+import { drawIcon } from '../ui/icons.js';
 import Modal from '../ui/modal.js';
 import OptionCard from '../ui/option-card.js';
 import TimerRing from '../ui/timer-ring.js';
@@ -112,7 +116,9 @@ export default class GameScreen extends BaseScreen {
       y: 0,
       w: sz(34),
       h: sz(34),
-      label: 'Ⅱ',
+      label: '',
+      icon: 'Ⅱ',
+      iconName: 'pause',
       style: 'dark',
       fontSize: sz(13),
       onClick: () => this.openPauseModal(),
@@ -124,8 +130,9 @@ export default class GameScreen extends BaseScreen {
       h: sz(42),
       label: '提示',
       subLabel: '',
-      style: 'secondary',
+      style: 'gold',
       icon: '💡',
+      iconName: 'bulb',
       onClick: () => this.openHintModal(),
     });
     this.extendButton = new Button({
@@ -135,8 +142,9 @@ export default class GameScreen extends BaseScreen {
       h: sz(42),
       label: '加时 +5 秒',
       subLabel: '看广告',
-      style: 'gold',
+      style: 'candyBlue',
       icon: '⏱️',
+      iconName: 'hourglass',
       onClick: () => this.useExtendFlow(),
     });
     this.buttons = [this.pauseButton, this.hintButton];
@@ -216,11 +224,12 @@ export default class GameScreen extends BaseScreen {
       return;
     }
     const options = this.run.currentOptions.filter((option) => !this.removedOptionIds.includes(option.id));
-    this.optionCards = options.map((option) => {
+    this.optionCards = options.map((option, index) => {
       return new OptionCard({
         id: option.id,
         text: option.text,
         letter: option.id,
+        index,
         onSelect: (id) => this.submit(id, false),
       });
     });
@@ -236,14 +245,14 @@ export default class GameScreen extends BaseScreen {
     const top = SAFE_TOP + sz(12);
     const compact = SCREEN_HEIGHT < 700;
     const isBoss = !!question.isBoss;
-    const hudBottom = top + sz(72) + (isBoss ? sz(34) : 0);
+    const hudBottom = top + sz(84) + (isBoss ? sz(34) : 0);
 
     const typeRowY = hudBottom + sz(4);
     const stemSize = compact ? sz(17) : sz(20);
     const stemLineHeight = stemSize * 1.38;
     measureCtx.font = font(stemSize, '700');
     const stemLines = wrapText(measureCtx, question.stem, w, compact ? 2 : 3);
-    const stemTop = typeRowY + sz(28);
+    const stemTop = typeRowY + sz(34);
     const stemBottom = stemTop + stemLines.length * stemLineHeight;
 
     let imageTop = stemBottom;
@@ -266,16 +275,20 @@ export default class GameScreen extends BaseScreen {
 
     const actionH = sz(42);
     const actionTop = SCREEN_HEIGHT - SAFE_BOTTOM - sz(14) - actionH;
+    const feedbackH = this.feedback ? sz(126) : 0;
     const optionsTop = cursorBottom + sz(12);
-    const optionsBottom = actionTop - sz(10);
+    const optionsBottom =
+      (this.feedback ? SCREEN_HEIGHT - SAFE_BOTTOM - sz(12) - feedbackH : actionTop) - sz(10);
     const available = Math.max(sz(110), optionsBottom - optionsTop);
     const cardCount = Math.max(1, this.optionCards.length);
     const gap = sz(8);
     const minCardH = compact ? sz(38) : sz(44);
-    const maxCardH = sz(78);
+    const maxCardH =
+      cardCount <= 2 ? (compact ? sz(72) : sz(98)) : SCREEN_HEIGHT > 780 ? sz(96) : sz(80);
     const cardH = clamp((available - gap * (cardCount - 1)) / cardCount, minCardH, maxCardH);
     const totalH = cardH * cardCount + gap * (cardCount - 1);
-    const startY = optionsTop + Math.max(0, (available - totalH) / 2);
+    // 选项贴近题面，剩余空间留给底部操作区，避免题目与选项之间出现大片空白
+    const startY = optionsTop + clamp((available - totalH) * 0.4, 0, sz(36));
 
     this.optionRects = [];
     this.optionCards.forEach((card, index) => {
@@ -284,8 +297,16 @@ export default class GameScreen extends BaseScreen {
       this.optionRects.push({ x, y: cardY, w, h: cardH, card });
     });
 
-    this.timerRing.setCenter(RIGHT_SAFE_X - sz(28), top + sz(30), sz(23));
-    this.pauseButton.setRect(x, top, sz(34), sz(34));
+    this.timerRing.setCenter(RIGHT_SAFE_X - sz(24), top + sz(31), sz(21));
+    this.pauseButton.setRect(x - sz(1), top - sz(3), sz(30), sz(30));
+
+    const questionCardY = typeRowY - sz(2);
+    const questionCard = {
+      x: x - sz(10),
+      y: questionCardY,
+      w: w + sz(20),
+      h: Math.max(sz(70), optionsTop - questionCardY - sz(6)),
+    };
 
     this.layout = {
       x,
@@ -294,6 +315,7 @@ export default class GameScreen extends BaseScreen {
       compact,
       isBoss,
       hudBottom,
+      questionCard,
       typeRowY,
       stemTop,
       stemLines,
@@ -395,6 +417,9 @@ export default class GameScreen extends BaseScreen {
       else card.setState('muted');
     }
 
+    // 反馈面板会占据底部一块空间，重新排布选项避免遮挡正确答案
+    this.rebuildLayout();
+
     const now = Date.now();
     if (result.correct) {
       this.app.audio.play('correct');
@@ -407,7 +432,7 @@ export default class GameScreen extends BaseScreen {
         this.theme.success
       );
       if (unlocked) {
-        this.addFloater('图鉴 +1', this.layout.x + this.layout.w - sz(44), this.layout.top + sz(82), this.theme.accent);
+        this.addFloater('图鉴 +1', this.layout.x + this.layout.w - sz(44), this.layout.top + sz(82), this.theme.primary);
       }
     } else {
       this.app.audio.play('wrong');
@@ -481,14 +506,19 @@ export default class GameScreen extends BaseScreen {
     this.modal.show({
       title: '已暂停',
       message: '倒计时已暂停。休息一下，或者继续挑战。',
+      tone: 'pause',
       buttons: [
         {
           label: '继续答题',
+          icon: '▶',
+          iconName: 'play',
           style: 'primary',
           onClick: () => this.timer.resume(),
         },
         {
           label: '放弃本局',
+          icon: '✕',
+          iconName: 'close',
           style: 'danger',
           onClick: () => this.openQuitConfirm(),
         },
@@ -505,11 +535,15 @@ export default class GameScreen extends BaseScreen {
       buttons: [
         {
           label: '继续答题',
+          icon: '▶',
+          iconName: 'play',
           style: 'primary',
           onClick: () => this.timer.resume(),
         },
         {
           label: '确认放弃',
+          icon: '✕',
+          iconName: 'close',
           style: 'danger',
           onClick: () => this.abandonRun(),
         },
@@ -564,10 +598,13 @@ export default class GameScreen extends BaseScreen {
       title: '你出局了',
       message: '生命值耗尽。复活后恢复 1 条命，并重答当前题；选项会重新洗牌。',
       tone: 'danger',
+      icon: 'heart',
       buttons: [
         {
           label: '看广告复活',
           subLabel: canAd.ok ? `剩余 ${left} 次` : '广告暂不可用',
+          icon: '❤️',
+          iconName: 'heart',
           style: 'primary',
           disabled: !canAd.ok || left <= 0,
           onClick: () => this.reviveByAd(),
@@ -575,6 +612,8 @@ export default class GameScreen extends BaseScreen {
         {
           label: `花 ${cost} 梗币复活`,
           subLabel: `当前 ${this.profile.coins} 梗币`,
+          icon: '🪙',
+          iconName: 'coin',
           style: 'gold',
           disabled: !canCoin || left <= 0,
           onClick: () => this.reviveByCoin(),
@@ -582,6 +621,8 @@ export default class GameScreen extends BaseScreen {
         {
           label: '放弃本局',
           subLabel: '按当前分数结算',
+          icon: '✕',
+          iconName: 'close',
           style: 'ghost',
           onClick: () => this.abandonRun(),
         },
@@ -687,10 +728,13 @@ export default class GameScreen extends BaseScreen {
     this.modal.show({
       title: '使用提示',
       message: '四选一会移除 2 个错误项；真假题会显示出处提示。提示不会直接给出答案。',
+      icon: 'bulb',
       buttons: [
         {
           label: '看广告提示',
           subLabel: canAd.ok ? `本局剩余 ${hintsLeft} 次` : '广告暂不可用',
+          icon: '💡',
+          iconName: 'bulb',
           style: 'primary',
           disabled: !canAd.ok,
           onClick: () => this.hintByAd(),
@@ -698,12 +742,16 @@ export default class GameScreen extends BaseScreen {
         {
           label: `花 ${cost} 梗币提示`,
           subLabel: `当前 ${this.profile.coins} 梗币`,
+          icon: '🪙',
+          iconName: 'coin',
           style: 'gold',
           disabled: !canCoin,
           onClick: () => this.hintByCoin(),
         },
         {
           label: '继续答题',
+          icon: '▶',
+          iconName: 'play',
           style: 'ghost',
           onClick: () => this.resumeTimerIfPlaying(),
         },
@@ -858,7 +906,7 @@ export default class GameScreen extends BaseScreen {
     const now = Date.now();
     const shakePower = now < this.shakeUntil ? (this.shakeUntil - now) / 320 : 0;
 
-    ctx.fillStyle = 'rgba(8, 9, 12, 0.36)';
+    ctx.fillStyle = 'rgba(170, 215, 255, 0.12)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     ctx.save();
@@ -887,44 +935,119 @@ export default class GameScreen extends BaseScreen {
 
   renderHud(ctx, theme) {
     const { x, w, top, isBoss } = this.layout;
+    const hud = {
+      x: x - sz(4),
+      y: top - sz(6),
+      w: w + sz(8),
+      h: sz(84),
+    };
+    const radius = sz(24);
 
+    drawCandyPanel(ctx, hud.x, hud.y, hud.w, hud.h, radius, {
+      headerHeight: sz(32),
+      headerColor: 'rgba(214, 241, 255, 0.95)',
+      border: '#bfe4f8',
+      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      shadowBlur: sz(18),
+      shadowOffsetY: sz(6),
+      glossAlpha: 0.5,
+    });
+
+    this.pauseButton.setRect(x - sz(1), top - sz(3), sz(30), sz(30));
     this.pauseButton.render(ctx, theme);
 
-    drawText(ctx, `题目 ${this.run.index + 1} / ${this.run.totalQuestions}`, x + sz(44), top + sz(10), {
-      font: font(sz(12), '700'),
-      color: theme.text,
+    drawText(ctx, '答题页', x + sz(38), top + sz(8), {
+      font: font(sz(15), '800'),
+      color: '#1f4e9c',
       baseline: 'top',
     });
-    renderLives(ctx, x + sz(44), top + sz(40), this.run.lives, 3, theme, sz(15), sz(6));
+
+    drawText(ctx, `第 ${this.run.index + 1} / ${this.run.totalQuestions} 题`, x + sz(42), top + sz(36), {
+      font: font(sz(12), '800'),
+      color: '#2f6fc0',
+      baseline: 'top',
+    });
+    const progressW = Math.min(sz(90), w * 0.32);
+    fillRoundRect(ctx, x + sz(42), top + sz(56), progressW, sz(5), sz(2.5), '#dceffb');
+    fillRoundRect(
+      ctx,
+      x + sz(42),
+      top + sz(56),
+      Math.max(sz(5), (progressW * (this.run.index + 1)) / this.run.totalQuestions),
+      sz(5),
+      sz(2.5),
+      '#35b84a'
+    );
+    renderLives(ctx, x + sz(42), top + sz(70), this.run.lives, 3, theme, sz(12), sz(5));
 
     this.timerRing.render(ctx, theme, this.remainingSec, this.totalSec, this.time);
-    drawText(ctx, `得分 ${this.run.score}`, RIGHT_SAFE_X - sz(28), top + sz(62), {
-      font: font(sz(11), '700'),
-      color: theme.accent,
+
+    const scoreW = sz(72);
+    const scoreX = RIGHT_SAFE_X - scoreW;
+    const scoreY = top + sz(53);
+    fillRoundRect(ctx, scoreX, scoreY, scoreW, sz(18), sz(9), 'rgba(255, 197, 49, 0.22)');
+    drawText(ctx, `得分 ${this.run.score}`, scoreX + scoreW / 2, scoreY + sz(9), {
+      font: font(sz(10.5), '800'),
+      color: '#c88a00',
       align: 'center',
       baseline: 'middle',
     });
 
     if (isBoss) {
-      renderBossBanner(ctx, theme, x, top + sz(76), w, sz(28), this.time);
+      renderBossBanner(ctx, theme, x, top + sz(88), w, sz(28), this.time);
     }
   }
 
   renderQuestion(ctx, theme) {
     const question = this.run.currentQuestion;
-    const { x, w, typeRowY, stemTop, stemLines, stemSize, stemLineHeight, imageTop, imageH, hintTop, hintH, hintLines } = this.layout;
+    const {
+      questionCard,
+      x,
+      w,
+      typeRowY,
+      stemTop,
+      stemLines,
+      stemSize,
+      stemLineHeight,
+      imageTop,
+      imageH,
+      hintTop,
+      hintH,
+      hintLines,
+    } = this.layout;
 
-    const typeText = `${TYPE_ICON[question.type]} ${TYPE_LABEL[question.type]} · ${DIFFICULTY_LABEL[question.difficulty]}`;
-    drawPill(ctx, typeText, x, typeRowY + sz(11), {
-      fontStr: font(sz(10), '700'),
-      color: question.isBoss ? theme.danger : theme.accent,
-      bg: hexToRgba(question.isBoss ? theme.danger : theme.primary, 0.13),
-      height: sz(21),
-      padX: sz(8),
+    drawCandyPanel(ctx, questionCard.x, questionCard.y, questionCard.w, questionCard.h, sz(22), {
+      headerHeight: sz(30),
+      headerColor: 'rgba(219, 242, 255, 0.96)',
+      border: '#bfe4f8',
+      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      shadowBlur: sz(20),
+      shadowOffsetY: sz(7),
+      glossAlpha: 0.45,
     });
 
-    ctx.font = font(stemSize, '700');
-    ctx.fillStyle = theme.text;
+    const typeColor = question.isBoss ? theme.danger : '#3a97f7';
+    const typeIcon =
+      { image: 'image', dialogue: 'chat', truefalse: 'quiz', meaning: 'book' }[question.type] ||
+      'quiz';
+    drawIcon(ctx, typeIcon, x + sz(10), typeRowY + sz(12), sz(17));
+    drawPill(
+      ctx,
+      `${TYPE_LABEL[question.type]} · ${DIFFICULTY_LABEL[question.difficulty]}`,
+      x + sz(23),
+      typeRowY + sz(12),
+      {
+        fontStr: font(sz(10), '800'),
+        color: '#ffffff',
+        bg: typeColor,
+        border: 'rgba(255,255,255,0.5)',
+        height: sz(22),
+        padX: sz(9),
+      }
+    );
+
+    ctx.font = font(stemSize, '800');
+    ctx.fillStyle = '#1f4e9c';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     stemLines.forEach((line, index) => {
@@ -936,33 +1059,90 @@ export default class GameScreen extends BaseScreen {
     }
 
     if (this.hintText) {
-      drawGlassPanel(ctx, x, hintTop, w, hintH, sz(10), theme, 0.82);
-      ctx.fillStyle = theme.accent;
-      ctx.fillRect(x, hintTop + sz(6), sz(2), hintH - sz(12));
-      drawText(ctx, '提示', x + sz(10), hintTop + sz(9), {
-        font: font(sz(10), '700'),
-        color: theme.accent,
+      fillRoundRect(
+        ctx,
+        x,
+        hintTop,
+        w,
+        hintH,
+        sz(12),
+        'rgba(255, 242, 203, 0.98)'
+      );
+      strokeRoundRect(
+        ctx,
+        x,
+        hintTop,
+        w,
+        hintH,
+        sz(12),
+        'rgba(214, 158, 32, 0.34)',
+        1
+      );
+      fillRoundRect(
+        ctx,
+        x + sz(9),
+        hintTop + sz(8),
+        sz(2.5),
+        hintH - sz(16),
+        sz(1.2),
+        '#e0a21d'
+      );
+      drawText(ctx, '提示', x + sz(18), hintTop + sz(9), {
+        font: font(sz(10), '800'),
+        color: '#a05a00',
         baseline: 'top',
       });
-      ctx.font = font(sz(12), '500');
-      ctx.fillStyle = hexToRgba(theme.text, 0.9);
+      ctx.font = font(sz(12), '600');
+      ctx.fillStyle = '#4b3a18';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       hintLines.forEach((line, index) => {
-        ctx.fillText(line, x + sz(38), hintTop + sz(8) + index * sz(17));
+        ctx.fillText(line, x + sz(46), hintTop + sz(8) + index * sz(17));
       });
     }
 
     for (const card of this.optionCards) card.render(ctx, theme);
+
+    // 只有两个选项（真假题）时，下方留白较多：放一个轻量的“思考”提示
+    if (this.optionCards.length <= 2 && this.optionRects.length) {
+      const last = this.optionRects[this.optionRects.length - 1];
+      const freeTop = last.y + last.h + sz(18);
+      const freeBottom = this.layout.actionTop - sz(14);
+      if (freeBottom - freeTop > sz(108)) {
+        const cx = x + w / 2;
+        const iconY = freeTop + (freeBottom - freeTop) * 0.34;
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        const glow = ctx.createRadialGradient(cx, iconY, sz(4), cx, iconY, sz(46));
+        glow.addColorStop(0, 'rgba(255, 214, 90, 0.35)');
+        glow.addColorStop(1, 'rgba(255, 214, 90, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, iconY, sz(46), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        drawIcon(ctx, 'bulb', cx, iconY, sz(46));
+        drawText(ctx, '仔细想想，再选答案', cx, iconY + sz(38), {
+          font: font(sz(12), '700'),
+          color: '#7fa3c6',
+          align: 'center',
+          baseline: 'middle',
+        });
+      }
+    }
   }
 
   renderImageCard(ctx, theme, x, y, w, h, question) {
     if (!h) return;
-    const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
-    gradient.addColorStop(0, hexToRgba(theme.panelSoft, 0.96));
-    gradient.addColorStop(1, hexToRgba(theme.panel, 0.96));
-    fillRoundRect(ctx, x, y, w, h, sz(16), gradient);
-    strokeRoundRect(ctx, x, y, w, h, sz(16), hexToRgba(theme.line, 0.85), 1);
+    drawCandyPanel(ctx, x, y, w, h, sz(16), {
+      fill: '#ffffff',
+      fillBottom: '#eaf9ff',
+      border: '#bfe4f8',
+      shadowColor: 'rgba(58, 122, 180, 0.16)',
+      shadowBlur: sz(10),
+      shadowOffsetY: sz(4),
+      glossAlpha: 0.4,
+    });
 
     const visual = question.visual || { emojis: ['🎭'], caption: '' };
     const emojis = visual.emojis && visual.emojis.length ? visual.emojis : ['🎭'];
@@ -979,18 +1159,11 @@ export default class GameScreen extends BaseScreen {
 
     if (visual.caption) {
       ctx.font = font(sz(12), '600');
-      ctx.fillStyle = theme.muted;
+      ctx.fillStyle = '#4a7cba';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(visual.caption, x + w / 2, y + h * 0.79);
     }
-
-    drawText(ctx, '原创抽象梗图', x + w - sz(10), y + h - sz(10), {
-      font: font(sz(8), '400'),
-      color: hexToRgba(theme.muted, 0.6),
-      align: 'right',
-      baseline: 'bottom',
-    });
   }
 
   renderActionRow(ctx, theme) {
@@ -1007,39 +1180,58 @@ export default class GameScreen extends BaseScreen {
     const panelH = sz(126);
     const panelY = SCREEN_HEIGHT - SAFE_BOTTOM - sz(14) - panelH;
 
-    drawGlassPanel(ctx, x, panelY, w, panelH, sz(14), theme, 0.96);
-    ctx.fillStyle = hexToRgba(color, 0.22);
-    ctx.fillRect(x, panelY, sz(4), panelH);
+    drawCandyPanel(ctx, x, panelY, w, panelH, sz(22), {
+      fill: '#ffffff',
+      fillBottom: '#eefaff',
+      border: color,
+      borderAlpha: 0.55,
+      shadowColor: hexToRgba(color, 0.28),
+      shadowBlur: sz(24),
+      shadowOffsetY: sz(9),
+      glossAlpha: 0.5,
+      lineWidth: 2,
+    });
 
-    drawText(ctx, title, x + sz(16), panelY + sz(16), {
-      font: font(sz(18), '800'),
-      color,
+    ctx.save();
+    ctx.shadowColor = hexToRgba(color, 0.3);
+    ctx.shadowBlur = sz(12);
+    fillRoundRect(ctx, x + sz(14), panelY + sz(14), sz(30), sz(30), sz(11), color);
+    ctx.restore();
+    if (isCorrect) {
+      drawCheckMark(ctx, x + sz(29), panelY + sz(29), sz(16), '#ffffff', sz(3));
+    } else {
+      drawCrossMark(ctx, x + sz(29), panelY + sz(29), sz(15), '#ffffff', sz(3));
+    }
+
+    drawText(ctx, title, x + sz(54), panelY + sz(17), {
+      font: font(sz(19), '900'),
+      color: color,
       baseline: 'top',
     });
 
     if (isCorrect) {
       const gained = this.feedback.gained || 0;
-      drawText(ctx, `+${gained} 分`, x + w - sz(16), panelY + sz(18), {
-        font: font(sz(14), '800'),
-        color: theme.accent,
+      drawText(ctx, `+${gained} 分`, x + w - sz(16), panelY + sz(19), {
+        font: font(sz(15), '900'),
+        color: '#c88a00',
         align: 'right',
         baseline: 'top',
       });
     } else {
-      drawText(ctx, `正确答案：${this.feedback.answerText}`, x + sz(16), panelY + sz(42), {
-        font: font(sz(12), '700'),
-        color: theme.text,
+      drawText(ctx, `正确答案：${this.feedback.answerText}`, x + sz(16), panelY + sz(50), {
+        font: font(sz(12), '800'),
+        color: '#1f4e9c',
         baseline: 'top',
       });
     }
 
-    measureCtx.font = font(sz(12), '400');
+    measureCtx.font = font(sz(12), '500');
     const explanationLines = wrapText(measureCtx, this.feedback.explanation || '', w - sz(32), 2);
-    ctx.font = font(sz(12), '400');
-    ctx.fillStyle = hexToRgba(theme.text, 0.82);
+    ctx.font = font(sz(12), '500');
+    ctx.fillStyle = 'rgba(74, 108, 146, 0.92)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    const explanationTop = isCorrect ? panelY + sz(42) : panelY + sz(64);
+    const explanationTop = isCorrect ? panelY + sz(52) : panelY + sz(74);
     explanationLines.forEach((line, index) => {
       ctx.fillText(line, x + sz(16), explanationTop + index * sz(18));
     });
@@ -1049,12 +1241,41 @@ export default class GameScreen extends BaseScreen {
       : this.run.status === RUN_PHASE.FINISHED
         ? '点击进入结算'
         : '点击继续';
-    drawText(ctx, footer, x + w - sz(16), panelY + panelH - sz(14), {
-      font: font(sz(11), '600'),
-      color: hexToRgba(theme.muted, 0.95),
+    drawPill(ctx, footer, x + w - sz(14), panelY + panelH - sz(16), {
+      fontStr: font(sz(10), '800'),
+      color: '#ffffff',
+      bg: color,
+      border: 'rgba(255,255,255,0.28)',
+      height: sz(22),
+      padX: sz(10),
       align: 'right',
-      baseline: 'bottom',
     });
+
+    if (this.run.status !== RUN_PHASE.DEAD) {
+      const progress = clamp(
+        (Date.now() - (this.feedbackUntil - FEEDBACK_MS)) / FEEDBACK_MS,
+        0,
+        1
+      );
+      fillRoundRect(
+        ctx,
+        x + sz(16),
+        panelY + panelH - sz(6),
+        w - sz(32),
+        sz(3),
+        sz(1.5),
+        'rgba(80, 70, 55, 0.12)'
+      );
+      fillRoundRect(
+        ctx,
+        x + sz(16),
+        panelY + panelH - sz(6),
+        Math.max(sz(3), (w - sz(32)) * progress),
+        sz(3),
+        sz(1.5),
+        hexToRgba(color, 0.7)
+      );
+    }
   }
 
   renderFloaters(ctx) {

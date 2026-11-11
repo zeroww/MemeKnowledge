@@ -5,38 +5,35 @@ import {
   isLevelUnlocked,
 } from '../data/levels.js';
 import {
-  CONTENT_X,
-  CONTENT_WIDTH,
-  SAFE_TOP,
-  SCREEN_HEIGHT,
-  SCREEN_WIDTH,
+  RIGHT_SAFE_X,
   sz,
 } from '../render.js';
 import { drawImageContain, drawImagePlaceholder, loadImage } from '../services/assets.js';
+import { drawIcon, drawIconTile } from '../ui/icons.js';
 import Button from '../ui/button.js';
 import Modal from '../ui/modal.js';
 import {
-  drawGlassPanel,
+  drawCandyPanel,
   drawPill,
   drawText,
   fillCircle,
   fillRoundRect,
   font,
-  hexToRgba,
   strokeCircle,
   strokeRoundRect,
 } from '../ui/draw.js';
 import BaseScreen from './base-screen.js';
 
+const NODE_ICONS = { 1: 'bed', 2: 'bowl', 3: 'school', 4: 'library' };
+
 /**
- * 关卡地图。第一至第三章已开放，按前置章节顺序解锁；第四章保留节点。
+ * 关卡地图。第一至第四章已开放，按前置章节顺序解锁。
  */
 export default class MapScreen extends BaseScreen {
   constructor(app) {
     super(app);
     this.mapImage = null;
     this.modal = new Modal();
-    this.rows = [];
     this.nodes = [];
     this.buttons = [];
     this.pressedTarget = null;
@@ -54,14 +51,15 @@ export default class MapScreen extends BaseScreen {
     const x = this.contentX + sz(18);
     const w = this.contentW - sz(36);
     const top = this.top + sz(12);
-    const compact = SCREEN_HEIGHT < 700;
 
     this.backButton = new Button({
       x,
       y: top,
       w: sz(32),
       h: sz(32),
-      label: '←',
+      label: '',
+      icon: '←',
+      iconName: 'back',
       style: 'dark',
       fontSize: sz(15),
       onClick: () => this.app.goHome(),
@@ -72,36 +70,41 @@ export default class MapScreen extends BaseScreen {
     const mapH = (w * 683) / 1024;
     const mapW = w;
 
-    const rowH = compact ? sz(40) : sz(46);
-    const rowGap = sz(5);
-    const rowsY = mapY + mapH + sz(12);
-
-    this.rows = LEVELS.map((level, index) => {
-      return {
-        level,
-        x,
-        y: rowsY + index * (rowH + rowGap),
-        w,
-        h: rowH,
-      };
-    });
-
     this.nodes = LEVELS.map((level) => {
       const nx = x + level.mapNode.x * mapW;
       const ny = mapY + level.mapNode.y * mapH;
       return {
         level,
-        x: nx - sz(22),
-        y: ny - sz(22),
-        w: sz(44),
-        h: sz(44),
+        x: nx - sz(24),
+        y: ny - sz(24),
+        w: sz(48),
+        h: sz(48),
         cx: nx,
         cy: ny,
       };
     });
 
+    // 底部建筑快捷入口
+    const navGap = sz(9);
+    const navW = (w - navGap * 3) / 4;
+    const navY = mapY + mapH + sz(34);
+    this.shortcuts = LEVELS.map((level, index) => ({
+      level,
+      x: x + index * (navW + navGap),
+      y: navY,
+      w: navW,
+      h: sz(74),
+    }));
+
+    this.progressCard = {
+      x,
+      y: navY + sz(86),
+      w,
+      h: sz(104),
+    };
+
     this.buttons = [this.backButton];
-    this.layoutInfo = { x, w, top, compact, mapX: x, mapY, mapW, mapH, rowH, rowGap, rowsY };
+    this.layoutInfo = { x, w, top, mapX: x, mapY, mapW, mapH, navY };
   }
 
   statusFor(level) {
@@ -120,6 +123,7 @@ export default class MapScreen extends BaseScreen {
       this.modal.show({
         title: level.title,
         message: '这一章尚未开放。先完成前面的关卡吧。',
+        icon: 'lock',
         buttons: [{ label: '知道了', style: 'primary' }],
       });
       return;
@@ -129,6 +133,7 @@ export default class MapScreen extends BaseScreen {
       this.modal.show({
         title: level.title,
         message: level.unlockHint || '请先完成上一章。',
+        icon: 'lock',
         buttons: [{ label: '知道了', style: 'primary' }],
       });
       return;
@@ -139,9 +144,12 @@ export default class MapScreen extends BaseScreen {
       message: completed
         ? `你已通过${level.title}。可以重玩本章，或继续后面的剧情。`
         : level.description || `${level.title}的考验正在等你。`,
+      icon: completed ? 'check' : NODE_ICONS[level.id] || 'play',
       buttons: [
         {
           label: completed ? '重玩本章' : '开始本章',
+          icon: '▶',
+          iconName: 'play',
           style: 'primary',
           onClick: () => this.startLevel(level.id),
         },
@@ -174,13 +182,7 @@ export default class MapScreen extends BaseScreen {
         ? '从宿舍出发，选择关卡'
         : nextLevel
           ? `${completedLevels.map((level) => level.chapter).join('、')}已完成 · 下一站：${nextLevel.name}`
-          : '第一至第三章已完成';
-
-    const bg = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    bg.addColorStop(0, theme.bgTop);
-    bg.addColorStop(1, theme.bgBottom);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+          : '第一至第四章已完成';
 
     this.backButton.render(ctx, theme);
     drawText(ctx, '校园地图', x + sz(44), top + sz(2), {
@@ -194,144 +196,181 @@ export default class MapScreen extends BaseScreen {
       baseline: 'top',
     });
 
-    // 地图卡片
-    fillRoundRect(
+    drawPill(
       ctx,
-      mapX + sz(2),
-      mapY + sz(4),
+      `${completedLevels.length}/${openLevels.length} 章`,
+      RIGHT_SAFE_X,
+      top + sz(16),
+      {
+        fontStr: font(sz(9), '800'),
+        color: '#2b6fd6',
+        bg: 'rgba(255,255,255,0.94)',
+        border: '#cfeafb',
+        height: sz(22),
+        padX: sz(10),
+        align: 'right',
+      }
+    );
+
+    // 地图卡片
+    drawCandyPanel(ctx, mapX, mapY, mapW, mapH, sz(22), {
+      fill: '#ffffff',
+      fillBottom: '#eaf9ff',
+      border: '#bfe4f8',
+      shadowColor: 'rgba(58, 122, 180, 0.24)',
+      shadowBlur: sz(24),
+      shadowOffsetY: sz(9),
+      glossAlpha: 0.35,
+    });
+    if (!drawImageContain(ctx, this.mapImage, mapX, mapY, mapW, mapH, sz(22))) {
+      drawImagePlaceholder(ctx, mapX, mapY, mapW, mapH, sz(22), theme, '校园地图加载中…');
+    }
+    strokeRoundRect(
+      ctx,
+      mapX,
+      mapY,
       mapW,
       mapH,
-      sz(16),
-      'rgba(0,0,0,0.3)'
+      sz(22),
+      'rgba(255,255,255,0.9)',
+      sz(1.6)
     );
-    fillRoundRect(ctx, mapX, mapY, mapW, mapH, sz(16), hexToRgba(theme.panel, 0.9));
-    if (!drawImageContain(ctx, this.mapImage, mapX, mapY, mapW, mapH, sz(16))) {
-      drawImagePlaceholder(ctx, mapX, mapY, mapW, mapH, sz(16), theme, '校园地图加载中…');
-    }
 
-    // 节点状态（不可见点击区域在 onTouchStart 处理）
+    // 建筑节点
     this.nodes.forEach((node) => {
       const level = node.level;
       const completed = this.app.databus.isLevelCompleted(level.id);
-      const unlocked = this.isUnlocked(level);
-      const ringColor = completed
-        ? theme.success
-        : unlocked
-          ? theme.accent
-          : 'rgba(255,255,255,0.42)';
+      const unlocked = this.isUnlocked(level) && level.available;
+      const ringColor = completed ? '#35b84a' : unlocked ? '#3a97f7' : '#9fb3c6';
+      const icon = NODE_ICONS[level.id] || 'school';
+
       ctx.save();
-      ctx.globalAlpha = completed || unlocked ? 0.95 : 0.55;
-      strokeCircle(ctx, node.cx, node.cy, sz(17), ringColor, sz(2));
-      fillCircle(
-        ctx,
-        node.cx + sz(12),
-        node.cy - sz(14),
-        sz(8),
-        completed ? theme.success : unlocked ? theme.accent : 'rgba(30,32,36,0.9)'
-      );
+      ctx.globalAlpha = level.available ? 1 : 0.72;
+      ctx.save();
+      ctx.shadowColor = 'rgba(30, 80, 130, 0.35)';
+      ctx.shadowBlur = sz(10);
+      ctx.shadowOffsetY = sz(3);
+      fillCircle(ctx, node.cx, node.cy, sz(22), 'rgba(255,255,255,0.96)');
+      ctx.restore();
+      strokeCircle(ctx, node.cx, node.cy, sz(22), ringColor, sz(3));
+      drawIcon(ctx, icon, node.cx, node.cy + sz(1), sz(30), {
+        alpha: unlocked || completed ? 1 : 0.7,
+      });
+
       if (completed) {
-        drawText(ctx, '✓', node.cx + sz(12), node.cy - sz(14), {
-          font: font(sz(9), '800'),
-          color: '#ffffff',
-          align: 'center',
-          baseline: 'middle',
-        });
+        drawIcon(ctx, 'check', node.cx + sz(15), node.cy - sz(15), sz(17));
       } else if (!unlocked) {
-        drawText(ctx, '🔒', node.cx + sz(12), node.cy - sz(14), {
-          font: font(sz(8), '400'),
-          color: '#ffffff',
-          align: 'center',
-          baseline: 'middle',
-        });
+        drawIcon(ctx, 'lock', node.cx + sz(15), node.cy - sz(15), sz(16));
       }
       ctx.restore();
     });
 
-    // 关卡行
-    this.rows.forEach((row) => {
-      const level = row.level;
-      const completed = this.app.databus.isLevelCompleted(level.id);
-      const unlocked = this.isUnlocked(level);
-      const isNext = unlocked && !completed;
-      const border = completed ? theme.success : isNext ? theme.accent : theme.line;
-      drawGlassPanel(
-        ctx,
-        row.x,
-        row.y,
-        row.w,
-        row.h,
-        sz(11),
-        theme,
-        unlocked ? 0.88 : 0.62,
-        unlocked ? 0.8 : 0.45
-      );
-      strokeRoundRect(
-        ctx,
-        row.x,
-        row.y,
-        row.w,
-        row.h,
-        sz(11),
-        hexToRgba(border, unlocked ? 0.9 : 0.35),
-        1
-      );
-
-      drawText(ctx, level.chapter, row.x + sz(14), row.y + row.h / 2 - sz(6), {
-        font: font(sz(9), '600'),
-        color: completed ? theme.success : theme.muted,
+    // 底部建筑快捷入口
+    (this.shortcuts || []).forEach((item) => {
+      const completed = this.app.databus.isLevelCompleted(item.level.id);
+      const unlocked = this.isUnlocked(item.level) && item.level.available;
+      const size = sz(50);
+      const tileX = item.x + (item.w - size) / 2;
+      ctx.save();
+      ctx.globalAlpha = unlocked ? 1 : 0.55;
+      drawIconTile(ctx, NODE_ICONS[item.level.id] || 'school', tileX, item.y, size, size, {
+        radius: sz(15),
+        iconScale: 0.6,
+      });
+      if (completed) {
+        drawIcon(ctx, 'check', tileX + size - sz(2), item.y + sz(2), sz(16));
+      } else if (!unlocked) {
+        drawIcon(ctx, 'lock', tileX + size - sz(2), item.y + sz(2), sz(15));
+      }
+      drawText(ctx, item.level.mapLabel, item.x + item.w / 2, item.y + size + sz(12), {
+        font: font(sz(10.5), '800'),
+        color: unlocked ? theme.text : theme.muted,
+        align: 'center',
         baseline: 'middle',
       });
-      drawText(ctx, level.name, row.x + sz(14), row.y + row.h / 2 + sz(8), {
-        font: font(sz(14), '800'),
-        color: unlocked ? theme.text : hexToRgba(theme.text, 0.55),
-        baseline: 'middle',
-      });
+      ctx.restore();
+    });
 
-      const status = this.statusFor(level);
-      const statusColor = completed
-        ? theme.success
-        : unlocked
-          ? theme.accent
-          : theme.muted;
-      drawPill(
+    // 剧情进度
+    const card = this.progressCard;
+    if (card) {
+      drawCandyPanel(ctx, card.x, card.y, card.w, card.h, sz(18), {
+        fill: '#ffffff',
+        fillBottom: '#f2fbff',
+        border: '#cfeafb',
+        shadowColor: 'rgba(58, 122, 180, 0.16)',
+        shadowBlur: sz(14),
+        shadowOffsetY: sz(5),
+        glossAlpha: 0.5,
+      });
+      drawText(ctx, '剧情进度', card.x + sz(14), card.y + sz(12), {
+        font: font(sz(11), '800'),
+        color: theme.text,
+        baseline: 'top',
+      });
+      drawText(
         ctx,
-        status,
-        row.x + row.w - sz(28),
-        row.y + row.h / 2,
+        completedLevels.length === openLevels.length
+          ? '全部章节已完成，梗王归位！'
+          : `依次通过${openLevels.length}章，才能找到回去的路`,
+        card.x + card.w - sz(14),
+        card.y + sz(13),
         {
-          fontStr: font(sz(9), '700'),
-          color: statusColor,
-          bg: hexToRgba(statusColor, 0.14),
-          height: sz(18),
-          padX: sz(7),
+          font: font(sz(9), '500'),
+          color: theme.muted,
           align: 'right',
+          baseline: 'top',
         }
       );
 
-      drawText(ctx, '›', row.x + row.w - sz(11), row.y + row.h / 2 - 1, {
-        font: font(sz(17), '400'),
-        color: hexToRgba(theme.muted, 0.8),
-        align: 'right',
-        baseline: 'middle',
+      const segGap = sz(6);
+      const segW = (card.w - sz(24) - segGap * (openLevels.length - 1)) / openLevels.length;
+      openLevels.forEach((level, index) => {
+        const completed = this.app.databus.isLevelCompleted(level.id);
+        const unlocked = this.isUnlocked(level);
+        const sx = card.x + sz(12) + index * (segW + segGap);
+        const sy = card.y + sz(36);
+        const segH = Math.min(sz(34), card.h - sz(50));
+        const fill = completed
+          ? 'rgba(53, 184, 74, 0.16)'
+          : unlocked
+            ? 'rgba(58, 151, 247, 0.14)'
+            : 'rgba(159, 179, 198, 0.16)';
+        fillRoundRect(ctx, sx, sy, segW, segH, sz(10), fill);
+        drawIcon(
+          ctx,
+          completed ? 'check' : unlocked ? 'play' : 'lock',
+          sx + sz(13),
+          sy + segH / 2,
+          sz(16)
+        );
+        drawText(ctx, level.chapter, sx + sz(24), sy + segH / 2 - sz(5), {
+          font: font(sz(9), '800'),
+          color: completed ? '#2a8f3a' : unlocked ? '#2b6fd6' : theme.muted,
+          baseline: 'middle',
+        });
+        drawText(ctx, completed ? '已通关' : unlocked ? '可挑战' : '未解锁', sx + sz(24), sy + segH / 2 + sz(7), {
+          font: font(sz(7.5), '500'),
+          color: completed ? '#2a8f3a' : unlocked ? '#2b6fd6' : theme.muted,
+          baseline: 'middle',
+        });
       });
-    });
+    }
+
+    this.modal.render(ctx, theme);
 
     drawText(
       ctx,
-      completedLevels.length >= openLevels.length
-        ? '第一至第三章已完成；第四章「图书馆」敬请期待'
-        : '第一至第三章已开放；完成前一章后解锁下一章',
-      x + w / 2,
-      this.bottom - sz(12),
+      '点击地图建筑或下方图标进入关卡',
+      this.contentX + this.contentW / 2,
+      this.bottom - sz(16),
       {
-        font: font(sz(9), '400'),
-        color: hexToRgba(theme.muted, 0.65),
+        font: font(sz(9.5), '500'),
+        color: 'rgba(127, 163, 198, 0.9)',
         align: 'center',
         baseline: 'middle',
       }
     );
-
-    this.modal.render(ctx, theme);
   }
 
   findTarget(x, y) {
@@ -341,9 +380,9 @@ export default class MapScreen extends BaseScreen {
         return { type: 'level', level: node.level };
       }
     }
-    for (const row of this.rows) {
-      if (x >= row.x && x <= row.x + row.w && y >= row.y && y <= row.y + row.h) {
-        return { type: 'level', level: row.level };
+    for (const item of this.shortcuts || []) {
+      if (x >= item.x && x <= item.x + item.w && y >= item.y && y <= item.y + item.h + sz(22)) {
+        return { type: 'level', level: item.level };
       }
     }
     return null;

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Memeknowledge UI preview</title>
+<base href="../../" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0b0f14; overflow: hidden; }
+  #stage { position: relative; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<script>
+  // ---- tiny wx shim for the mini-game modules ----
+  const params = new URLSearchParams(location.search);
+  const W = Number(params.get('w') || 375);
+  const H = Number(params.get('h') || 667);
+
+  window.GameGlobal = window;
+
+  const storageMap = new Map();
+  const clone = (v) => JSON.parse(JSON.stringify(v));
+
+  const stage = document.createElement('div');
+  stage.id = 'stage';
+  document.body.appendChild(stage);
+
+  let gameCanvas = null;
+  const touchHandlers = { start: [], move: [], end: [], cancel: [] };
+  window.__touchHandlers = touchHandlers;
+
+  window.wx = {
+    createCanvas() {
+      if (gameCanvas) return gameCanvas;
+      gameCanvas = document.createElement('canvas');
+      gameCanvas.style.width = W + 'px';
+      gameCanvas.style.height = H + 'px';
+      stage.appendChild(gameCanvas);
+      return gameCanvas;
+    },
+    createImage() {
+      return new Image();
+    },
+    getWindowInfo() {
+      return {
+        screenWidth: W,
+        screenHeight: H,
+        windowWidth: W,
+        windowHeight: H,
+        pixelRatio: 2,
+        safeArea: { top: 20, bottom: H - 12, left: 0, right: W, width: W, height: H - 32 },
+      };
+    },
+    getSystemInfoSync() {
+      return window.wx.getWindowInfo();
+    },
+    getMenuButtonBoundingClientRect() {
+      return { left: W - 97, right: W - 20, top: 24, bottom: 56, width: 77, height: 32 };
+    },
+    getLaunchOptionsSync() {
+      return { scene: 1001, query: {} };
+    },
+    getStorageSync(key) {
+      return storageMap.has(key) ? clone(storageMap.get(key)) : '';
+    },
+    setStorageSync(key, value) {
+      storageMap.set(key, clone(value));
+    },
+    removeStorageSync(key) {
+      storageMap.delete(key);
+    },
+    getStorageInfoSync() {
+      return { keys: Array.from(storageMap.keys()) };
+    },
+    onTouchStart(fn) { touchHandlers.start.push(fn); },
+    onTouchMove(fn) { touchHandlers.move.push(fn); },
+    onTouchEnd(fn) { touchHandlers.end.push(fn); },
+    onTouchCancel(fn) { touchHandlers.cancel.push(fn); },
+    onHide() {},
+    onShow() {},
+    showModal(options) {
+      if (options && options.success) options.success({ confirm: true, content: '新昵称' });
+    },
+    showShareMenu() {},
+    shareAppMessage() {},
+    vibrateShort() {},
+    setKeepScreenOn() {},
+  };
+
+  // deterministic-ish time for screenshots
+  window.requestAnimationFrame = window.requestAnimationFrame || ((fn) => setTimeout(() => fn(Date.now()), 16));
+</script>
+<script type="module">
+  import Main from '../../js/main.js';
+
+  const params = new URLSearchParams(location.search);
+  const app = new Main();
+  window.__app = app;
+
+  function wait(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+  async function boot() {
+    const screen = params.get('screen') || 'home';
+    const mode = params.get('mode') || '';
+    try {
+      if (screen === 'home') {
+        await wait(120);
+      } else if (screen === 'map') {
+        app.showScreen('map');
+      } else if (screen === 'intro') {
+        app.showScreen('levelIntro', { levelId: Number(params.get('level') || 1) });
+      } else if (screen === 'game' || screen === 'story') {
+        const level = Number(params.get('level') || 1);
+        if (screen === 'story') await app.startLevelRun(level);
+        else await app.startClassicRun();
+      } else if (screen === 'result') {
+        const api = await import('../../js/services/api.js');
+        const started = await api.startRun({ mode: 'classic', profile: app.profile });
+        const run = started.run;
+        app.databus.setRun(run);
+        while (run.status === 'playing' || run.status === 'feedback') {
+          if (run.status === 'feedback') {
+            run.advance();
+            continue;
+          }
+          await api.submitAnswer(run, run.currentQuestion.answerKey, { elapsedMs: 2400 });
+        }
+        app.showScreen('result', { run });
+      } else {
+        app.showScreen(screen);
+      }
+      if (mode === 'pause') {
+        const gs = app.screens.game;
+        if (gs && gs.openPauseModal) gs.openPauseModal();
+      }
+      if (mode === 'revive') {
+        const gs = app.screens.game;
+        if (gs && gs.openReviveModal) gs.openReviveModal();
+      }
+      if (mode === 'hint') {
+        const gs = app.screens.game;
+        if (gs && gs.openHintModal) gs.openHintModal();
+      }
+      if (mode === 'toast') {
+        app.toast.show('这是一个提示');
+      }
+      if (mode === 'ad') {
+        if (app.mockAd && app.mockAd.show) app.mockAd.show({ title: '模拟广告', onReward() {} });
+      }
+    } catch (error) {
+      document.title = 'BOOT ERROR ' + error.message;
+      console.error(error);
+    }
+    window.__ready = true;
+    document.title = 'ready ' + Date.now();
+  }
+
+  boot();
+</script>
+</body>
+</html>

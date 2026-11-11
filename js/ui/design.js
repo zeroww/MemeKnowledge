@@ -1,24 +1,44 @@
 /**
- * 视觉设计令牌。
- * 目标：黑墨 + 象牙白 + 猩红 + 暖金的高对比漫画/电影感 UI。
+ * 视觉设计令牌（参考图风格）。
+ *
+ * 目标：明亮校园卡通 —— 天空蓝 + 奶油白 + 糖果绿/蓝/橙 + 金色。
+ * - 背景：浅蓝天空、白云、阳光
+ * - 面板：白色圆角卡片 + 浅蓝描边 + 柔和蓝灰投影
+ * - 按钮：胶囊形果冻质感，白边 + 高光 + 同色投影
+ * - 文字：深海军蓝标题 + 蓝灰辅助文字
  */
 export const PALETTE = {
-  ink: '#0b0d12',
-  ink2: '#11151b',
-  ink3: '#181d26',
-  ink4: '#232a35',
-  ivory: '#f7f0e4',
-  ivory2: '#efe3d1',
-  ivory3: '#e2d1b8',
-  crimson: '#e5483f',
-  crimsonDeep: '#a92520',
-  gold: '#f3c969',
-  goldDeep: '#c69b3d',
-  jade: '#44c39a',
-  jadeDeep: '#238c6c',
-  slate: '#8b909a',
+  sky: '#79cbff',
+  skyLight: '#e6f8ff',
+  skyDeep: '#2f8ce8',
+  navy: '#1f4e9c',
+  navySoft: '#4a7cba',
+  ink: '#1f4e9c',
+  ink2: '#2f6fc0',
+  ink3: '#7fa3c6',
+  ink4: '#cfeafb',
+  ivory: '#ffffff',
+  ivory2: '#f1faff',
+  ivory3: '#dff1fd',
+  crimson: '#ff8a3d',
+  crimsonDeep: '#e97a1e',
+  gold: '#ffc531',
+  goldDeep: '#d99a00',
+  jade: '#35b84a',
+  jadeDeep: '#279a3a',
+  slate: '#7fa3c6',
   white: '#ffffff',
   black: '#000000',
+};
+
+export const CANDY = {
+  green: { from: '#9ceb74', mid: '#4bcd55', to: '#2eb43d', edge: '#2a9f36' },
+  blue: { from: '#86d4ff', mid: '#3a97f7', to: '#2174de', edge: '#1f6ac9' },
+  orange: { from: '#ffd47a', mid: '#ffa62b', to: '#ff8a12', edge: '#e97a08' },
+  red: { from: '#ffb0a6', mid: '#f96054', to: '#e8453a', edge: '#c93226' },
+  purple: { from: '#ddc6ff', mid: '#a97cf2', to: '#8154de', edge: '#7045c9' },
+  pink: { from: '#ffd0e8', mid: '#ff86bf', to: '#f267a9', edge: '#dd4f93' },
+  gold: { from: '#ffe58a', mid: '#ffc12a', to: '#ffa515', edge: '#e89400' },
 };
 
 export const RADIUS = {
@@ -53,10 +73,10 @@ export const TYPE = {
 };
 
 export const SHADOW = {
-  panel: 'rgba(0, 0, 0, 0.38)',
-  soft: 'rgba(0, 0, 0, 0.22)',
-  glowCrimson: 'rgba(229, 72, 63, 0.28)',
-  glowGold: 'rgba(243, 201, 105, 0.22)',
+  panel: 'rgba(58, 122, 180, 0.18)',
+  soft: 'rgba(58, 122, 180, 0.12)',
+  glowCrimson: 'rgba(255, 138, 61, 0.28)',
+  glowGold: 'rgba(255, 197, 49, 0.22)',
 };
 
 export function fontOf(size, weight = '400') {
@@ -64,8 +84,8 @@ export function fontOf(size, weight = '400') {
 }
 
 /**
- * 为页面主题补充固定的故事视觉色。
- * 皮肤的 primary/accent 仍用于品牌强调，黑/象牙/金/红保持统一。
+ * 为页面主题补充固定的设计色。
+ * 皮肤的 primary/accent 仍用于品牌强调，天空蓝/奶油白/金色保持统一。
  */
 export function withDesignTokens(theme = {}) {
   return {
