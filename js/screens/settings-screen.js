@@ -220,15 +220,17 @@ export default class SettingsScreen extends BaseScreen {
         const ty = row.y + (row.h - trackH) / 2;
         const track = ctx.createLinearGradient(tx, ty, tx, ty + trackH);
         if (row.value) {
-          track.addColorStop(0, '#7ee06a');
-          track.addColorStop(1, '#2fb63f');
+          track.addColorStop(0, '#1c8a4a');
+          track.addColorStop(1, '#35d27a');
         } else {
-          track.addColorStop(0, '#e3edf7');
-          track.addColorStop(1, '#c6d8e9');
+          track.addColorStop(0, '#0a1626');
+          track.addColorStop(1, '#12304a');
         }
         fillRoundRect(ctx, tx, ty, trackW, trackH, trackH / 2, track);
         ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+        ctx.strokeStyle = row.value
+          ? 'rgba(93, 242, 160, 0.65)'
+          : 'rgba(94, 231, 255, 0.3)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(tx + trackH / 2, ty + 1);
@@ -238,10 +240,10 @@ export default class SettingsScreen extends BaseScreen {
         const knobR = trackH / 2 - sz(2);
         const knobX = row.value ? tx + trackW - trackH / 2 : tx + trackH / 2;
         ctx.save();
-        ctx.shadowColor = 'rgba(40, 80, 120, 0.28)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
         ctx.shadowBlur = sz(5);
         ctx.shadowOffsetY = sz(1.5);
-        fillCircle(ctx, knobX, ty + trackH / 2, knobR, '#ffffff');
+        fillCircle(ctx, knobX, ty + trackH / 2, knobR, row.value ? '#ffffff' : '#7fa6c9');
         ctx.restore();
       } else if (row.type === 'value') {
         drawText(ctx, row.value, row.x + row.w - sz(28), row.y + row.h / 2, {

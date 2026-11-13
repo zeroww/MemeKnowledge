@@ -32,10 +32,10 @@ export default class TimerRing {
     }
 
     ctx.save();
-    ctx.shadowColor = 'rgba(80, 130, 180, 0.22)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = sz(14);
     ctx.shadowOffsetY = sz(4);
-    fillCircle(ctx, this.x, this.y, this.r, '#ffffff');
+    fillCircle(ctx, this.x, this.y, this.r, '#0a1626');
     ctx.restore();
 
     const inner = ctx.createRadialGradient(
@@ -46,8 +46,8 @@ export default class TimerRing {
       this.y,
       this.r
     );
-    inner.addColorStop(0, '#ffffff');
-    inner.addColorStop(1, '#eef8ff');
+    inner.addColorStop(0, '#0e2138');
+    inner.addColorStop(1, '#08121e');
     fillCircle(ctx, this.x, this.y, this.r - sz(1.5), inner);
 
     ctx.beginPath();
@@ -58,7 +58,7 @@ export default class TimerRing {
       0,
       Math.PI * 2
     );
-    ctx.strokeStyle = '#dceaf7';
+    ctx.strokeStyle = '#12304a';
     ctx.lineWidth = lineWidth;
     ctx.stroke();
 
@@ -90,7 +90,7 @@ export default class TimerRing {
 
     drawText(ctx, String(Math.ceil(rawRemaining)), this.x, this.y - sz(2), {
       font: font(this.r * 0.8, '900'),
-      color: '#1f4e9c',
+      color: '#e8f7ff',
       align: 'center',
       baseline: 'middle',
     });

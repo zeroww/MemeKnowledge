@@ -170,7 +170,7 @@ export default class Modal {
     const toneColor = this.tone === 'danger' ? theme.danger : theme.accent;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(24, 58, 96, 0.42)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.66)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     const cx = x + w / 2;
@@ -181,7 +181,7 @@ export default class Modal {
     ctx.globalAlpha = eased;
 
     ctx.save();
-    ctx.shadowColor = 'rgba(30, 70, 120, 0.32)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
     ctx.shadowBlur = sz(28);
     ctx.shadowOffsetY = sz(12);
     fillRoundRectGradient(
@@ -191,32 +191,52 @@ export default class Modal {
       w,
       h,
       sz(26),
-      '#ffffff',
-      '#eefbff'
+      '#0a1626',
+      '#0e2138'
     );
     ctx.restore();
-    drawTopSheen(ctx, x, y, w, h, sz(26), 0.5);
-    strokeRoundRect(ctx, x, y, w, h, sz(26), '#bfe4f8', 1.8);
+    drawTopSheen(ctx, x, y, w, h, sz(26), 0.14);
+    strokeRoundRect(ctx, x, y, w, h, sz(26), theme.line || '#1e4a6e', 1.8);
 
     // 顶部悬浮图标
     if (this.iconName) {
       drawIcon(ctx, this.iconName, cx, y + sz(2), sz(44));
     } else if (this.tone === 'pause') {
-      drawIcon(ctx, 'pause', cx, y + sz(2), sz(44));
+      ctx.save();
+      ctx.shadowColor = 'rgba(94, 231, 255, 0.55)';
+      ctx.shadowBlur = sz(20);
+      fillCircle(ctx, cx, y + sz(2), sz(22), '#07111d');
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, y + sz(2), sz(22), 0, Math.PI * 2);
+      ctx.strokeStyle = '#5ee7ff';
+      ctx.lineWidth = sz(2);
+      ctx.stroke();
+      ctx.strokeStyle = '#9ff4ff';
+      ctx.lineWidth = sz(5);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - sz(6), y - sz(7));
+      ctx.lineTo(cx - sz(6), y + sz(11));
+      ctx.moveTo(cx + sz(6), y - sz(7));
+      ctx.lineTo(cx + sz(6), y + sz(11));
+      ctx.stroke();
+      ctx.restore();
     } else {
       ctx.save();
-      ctx.shadowColor = hexToRgba(toneColor, 0.5);
-      ctx.shadowBlur = sz(18);
+      ctx.shadowColor = hexToRgba(toneColor, 0.65);
+      ctx.shadowBlur = sz(22);
       ctx.shadowOffsetY = sz(4);
       const iconGradient = ctx.createLinearGradient(cx, y - sz(24), cx, y + sz(24));
-      iconGradient.addColorStop(0, this.tone === 'danger' ? '#ff9d8f' : '#ffd970');
-      iconGradient.addColorStop(1, this.tone === 'danger' ? '#e8453a' : '#ffb400');
+      iconGradient.addColorStop(0, this.tone === 'danger' ? '#ff8a8a' : '#5df2c0');
+      iconGradient.addColorStop(1, this.tone === 'danger' ? '#c92a35' : '#147d6a');
       fillCircle(ctx, cx, y + sz(2), sz(22), iconGradient);
       ctx.restore();
       ctx.save();
       ctx.beginPath();
       ctx.arc(cx, y + sz(2), sz(22), 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.strokeStyle = this.tone === 'danger' ? '#ff8a8a' : '#5df2c0';
       ctx.lineWidth = sz(2);
       ctx.stroke();
       ctx.restore();

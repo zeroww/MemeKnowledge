@@ -331,7 +331,7 @@ export default class LevelIntroScreen extends BaseScreen {
     measureCtx.font = font(fontSize, '500');
     const lines = wrapText(measureCtx, step.text, textW, maxLines);
     ctx.font = font(fontSize, '500');
-    ctx.fillStyle = '#1f4e9c';
+    ctx.fillStyle = theme.text;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     lines.forEach((line, index) => {
@@ -345,7 +345,7 @@ export default class LevelIntroScreen extends BaseScreen {
       bubbleRect.y + sz(18),
       {
         font: font(sz(9), '600'),
-        color: '#7fa3c6',
+        color: theme.muted,
         align: 'right',
         baseline: 'middle',
       }

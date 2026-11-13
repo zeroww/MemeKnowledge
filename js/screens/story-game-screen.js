@@ -237,12 +237,12 @@ export default class StoryGameScreen extends GameScreen {
 
     drawCandyPanel(ctx, hud.x, hud.y, hud.w, hud.h, sz(22), {
       headerHeight: sz(30),
-      headerColor: 'rgba(214, 241, 255, 0.95)',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      headerColor: 'rgba(12, 32, 52, 0.95)',
+      border: 'rgba(94, 231, 255, 0.45)',
+      shadowColor: 'rgba(0, 0, 0, 0.5)',
       shadowBlur: sz(18),
       shadowOffsetY: sz(6),
-      glossAlpha: 0.5,
+      glossAlpha: 0.14,
     });
 
     this.pauseButton.render(ctx, theme);
@@ -254,7 +254,7 @@ export default class StoryGameScreen extends GameScreen {
       top + sz(8),
       {
         font: font(sz(13), '800'),
-        color: '#1f4e9c',
+        color: theme.text,
         baseline: 'top',
       }
     );
@@ -265,7 +265,7 @@ export default class StoryGameScreen extends GameScreen {
       top + sz(38),
       {
         font: font(sz(10), '700'),
-        color: '#5b8ec0',
+        color: '#9ff4ff',
         baseline: 'top',
       }
     );
@@ -273,7 +273,7 @@ export default class StoryGameScreen extends GameScreen {
     const barX = x + sz(44);
     const barY = top + sz(54);
     const barW = Math.min(sz(90), w * 0.32);
-    fillRoundRect(ctx, barX, barY, barW, sz(5), sz(2.5), '#dceffb');
+    fillRoundRect(ctx, barX, barY, barW, sz(5), sz(2.5), '#12304a');
     fillRoundRect(
       ctx,
       barX,
@@ -281,7 +281,7 @@ export default class StoryGameScreen extends GameScreen {
       Math.max(sz(5), (barW * (this.run.index + 1)) / this.run.totalQuestions),
       sz(5),
       sz(2.5),
-      '#35b84a'
+      '#5ee7ff'
     );
     renderLives(ctx, x + sz(44), top + sz(66), this.run.lives, 3, theme, sz(11), sz(4));
 
@@ -297,11 +297,11 @@ export default class StoryGameScreen extends GameScreen {
       scoreW,
       sz(18),
       sz(9),
-      'rgba(255, 197, 49, 0.22)'
+      'rgba(255, 207, 106, 0.14)'
     );
     drawText(ctx, `得分 ${this.run.score}`, scoreX + scoreW / 2, scoreY + sz(9), {
       font: font(sz(10.5), '800'),
-      color: '#c88a00',
+      color: '#ffcf6a',
       align: 'center',
       baseline: 'middle',
     });
@@ -402,7 +402,7 @@ export default class StoryGameScreen extends GameScreen {
     measureCtx.font = font(fontSize, '700');
     const lines = wrapText(measureCtx, question.stem, content.w, maxLines);
     ctx.font = font(fontSize, '700');
-    ctx.fillStyle = '#1f4e9c';
+    ctx.fillStyle = theme.text;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     lines.forEach((line, index) => {
@@ -411,12 +411,12 @@ export default class StoryGameScreen extends GameScreen {
 
     if (hasHint) {
       const hintY = content.y + content.h - hintH;
-      fillRoundRect(ctx, content.x, hintY, content.w, hintH, sz(6), 'rgba(255, 213, 74, 0.22)');
-      ctx.fillStyle = '#b77900';
+      fillRoundRect(ctx, content.x, hintY, content.w, hintH, sz(6), 'rgba(43, 33, 10, 0.94)');
+      ctx.fillStyle = '#ffcf6a';
       ctx.fillRect(content.x, hintY + sz(4), sz(2), hintH - sz(8));
       drawText(ctx, '提示', content.x + sz(7), hintY + sz(4), {
         font: font(sz(8), '800'),
-        color: theme.danger,
+        color: '#ffe08a',
         baseline: 'top',
       });
       const hintFont = Math.max(8, fontSize * 0.8);
@@ -428,7 +428,7 @@ export default class StoryGameScreen extends GameScreen {
         Math.max(1, Math.floor((hintH - sz(14)) / (hintFont * 1.3)))
       );
       ctx.font = font(hintFont, '500');
-      ctx.fillStyle = 'rgba(75, 58, 24, 0.88)';
+      ctx.fillStyle = 'rgba(243, 226, 176, 0.88)';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       hintLines.forEach((line, index) => {
@@ -438,7 +438,7 @@ export default class StoryGameScreen extends GameScreen {
 
     if (isImage) {
       const visualY = content.y + content.h - visualH;
-      fillRoundRect(ctx, content.x, visualY, content.w, visualH, sz(6), 'rgba(230, 244, 255, 0.85)');
+      fillRoundRect(ctx, content.x, visualY, content.w, visualH, sz(6), 'rgba(10, 26, 42, 0.9)');
       const visual = question.visual;
       const emojiSize = Math.min(sz(24), content.w * 0.08);
       const emojis = visual.emojis && visual.emojis.length ? visual.emojis : ['🎭'];
@@ -454,7 +454,7 @@ export default class StoryGameScreen extends GameScreen {
       });
       if (visual.caption) {
         ctx.font = font(Math.max(8, fontSize * 0.7), '500');
-        ctx.fillStyle = '#7fa3c6';
+        ctx.fillStyle = '#9ff4ff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(visual.caption, content.x + content.w / 2, visualY + visualH * 0.76);
@@ -473,14 +473,14 @@ export default class StoryGameScreen extends GameScreen {
     const color = isCorrect ? theme.success : theme.danger;
 
     drawCandyPanel(ctx, bubbleRect.x, bubbleRect.y, bubbleRect.w, bubbleRect.h, sz(20), {
-      fill: '#ffffff',
-      fillBottom: '#eefaff',
+      fill: '#0a1626',
+      fillBottom: '#0e2138',
       border: color,
-      borderAlpha: 0.55,
-      shadowColor: hexToRgba(color, 0.26),
+      borderAlpha: 0.6,
+      shadowColor: hexToRgba(color, 0.3),
       shadowBlur: sz(18),
       shadowOffsetY: sz(7),
-      glossAlpha: 0.45,
+      glossAlpha: 0.12,
       lineWidth: 2,
     });
 
@@ -507,14 +507,14 @@ export default class StoryGameScreen extends GameScreen {
     if (isCorrect) {
       drawText(ctx, `+${this.feedback.gained || 0} 分`, bubbleRect.x + bubbleRect.w - sz(14), bubbleRect.y + sz(16), {
         font: font(sz(13), '900'),
-        color: '#c88a00',
+        color: '#ffcf6a',
         align: 'right',
         baseline: 'top',
       });
     } else {
       drawText(ctx, `正确答案：${this.feedback.answerText}`, bubbleRect.x + sz(14), bubbleRect.y + sz(44), {
         font: font(sz(10.5), '800'),
-        color: '#1f4e9c',
+        color: theme.text,
         baseline: 'top',
       });
     }
@@ -527,7 +527,7 @@ export default class StoryGameScreen extends GameScreen {
       2
     );
     ctx.font = font(sz(10.5), '500');
-    ctx.fillStyle = 'rgba(74, 108, 146, 0.9)';
+    ctx.fillStyle = 'rgba(190, 225, 245, 0.72)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     const explanationTop = isCorrect ? bubbleRect.y + sz(44) : bubbleRect.y + sz(64);
@@ -548,9 +548,9 @@ export default class StoryGameScreen extends GameScreen {
       bubbleRect.y + bubbleRect.h - sz(15),
       {
         fontStr: font(sz(9.5), '800'),
-        color: '#ffffff',
-        bg: color,
-        border: 'rgba(255,255,255,0.28)',
+        color,
+        bg: 'rgba(4, 10, 18, 0.5)',
+        border: hexToRgba(color, 0.6),
         height: sz(21),
         padX: sz(9),
         align: 'right',

@@ -475,9 +475,9 @@ export default class ResultScreen extends BaseScreen {
     if (isLevel) {
       drawPill(ctx, this.level.title, x + w / 2, top + sz(8), {
         fontStr: font(sz(9), '800'),
-        color: '#ff8a3d',
-        bg: 'rgba(255,138,61,0.12)',
-        border: 'rgba(255,138,61,0.26)',
+        color: '#9ff4ff',
+        bg: 'rgba(94,231,255,0.1)',
+        border: 'rgba(94,231,255,0.4)',
         height: sz(18),
         padX: sz(9),
         align: 'center',
@@ -489,7 +489,7 @@ export default class ResultScreen extends BaseScreen {
 
     drawText(ctx, win ? (isLevel ? '关卡完成' : '通关！') : isLevel ? '挑战失败' : '出局', x + w / 2, top + sz(26), {
       font: font(sz(30), '900'),
-      color: win ? '#1f4e9c' : theme.danger,
+      color: win ? '#e8f7ff' : theme.danger,
       align: 'center',
       baseline: 'top',
     });
@@ -516,24 +516,24 @@ export default class ResultScreen extends BaseScreen {
 
     const scoreCardY = top + sz(92);
     drawCandyPanel(ctx, x, scoreCardY, w, sz(64), sz(20), {
-      fill: '#ffffff',
-      fillBottom: '#eaf9ff',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      fill: '#0a1626',
+      fillBottom: '#0e2138',
+      border: 'rgba(94, 231, 255, 0.4)',
+      shadowColor: 'rgba(0, 0, 0, 0.5)',
       shadowBlur: sz(18),
       shadowOffsetY: sz(7),
-      glossAlpha: 0.5,
+      glossAlpha: 0.12,
     });
     drawIcon(ctx, win ? 'trophy' : 'heart', x + sz(40), scoreCardY + sz(32), sz(46));
     drawText(ctx, String(this.claim.score), x + w / 2 + sz(16), scoreCardY + sz(25), {
       font: font(sz(36), '900'),
-      color: '#1f4e9c',
+      color: '#ffcf6a',
       align: 'center',
       baseline: 'middle',
     });
     drawText(ctx, '得分 / 满分 280', x + w / 2 + sz(16), scoreCardY + sz(49), {
       font: font(sz(9), '600'),
-      color: '#7fa3c6',
+      color: '#7fa6c9',
       align: 'center',
       baseline: 'middle',
     });
@@ -541,9 +541,9 @@ export default class ResultScreen extends BaseScreen {
     if (this.isNewBest) {
       drawPill(ctx, '新纪录', x + w - sz(12), scoreCardY + sz(16), {
         fontStr: font(sz(9), '800'),
-        color: '#ffffff',
-        bg: '#ffb400',
-        border: 'rgba(255,255,255,0.7)',
+        color: '#ffcf6a',
+        bg: 'rgba(255,207,106,0.12)',
+        border: 'rgba(255,207,106,0.5)',
         height: sz(20),
         padX: sz(9),
         align: 'right',
@@ -582,7 +582,7 @@ export default class ResultScreen extends BaseScreen {
       w,
       coinPanelH,
       coinPanelH / 2,
-      'rgba(255,255,255,0.94)'
+      'rgba(10, 22, 38, 0.96)'
     );
     strokeRoundRect(
       ctx,
@@ -591,19 +591,19 @@ export default class ResultScreen extends BaseScreen {
       w,
       coinPanelH,
       coinPanelH / 2,
-      '#bfe4f8',
+      'rgba(255, 207, 106, 0.4)',
       1
     );
     drawCoin(ctx, x + sz(18), coinY, sz(10), theme.accent);
     drawText(ctx, `梗币 +${this.totalCoins}`, x + sz(36), coinY, {
       font: font(sz(15), '800'),
-      color: '#ff8a3d',
+      color: '#ffcf6a',
       baseline: 'middle',
     });
     if (this.alreadyClaimed) {
       drawText(ctx, '奖励已领取', x + w - sz(16), coinY, {
         font: font(sz(10), '600'),
-        color: '#7fa3c6',
+        color: '#7fa6c9',
         align: 'right',
         baseline: 'middle',
       });

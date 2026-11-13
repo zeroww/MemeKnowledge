@@ -1,5 +1,5 @@
 /**
- * 生成小游戏图标（开发用）：
+ * 生成小游戏图标（深色霓虹竞技场风格，开发用）：
  * - docs/branding/app-icon-512.png
  * - docs/branding/app-icon-144.png
  *
@@ -55,145 +55,212 @@ function radial(x, y, r0, r1, stops) {
   return g;
 }
 
-// 天空
-ctx.fillStyle = lin(0, 0, 0, SIZE, [
-  [0, '#6cc7fb'],
-  [0.55, '#bfeaff'],
-  [1, '#f0fcff'],
-]);
-ctx.fillRect(0, 0, SIZE, SIZE);
-
-// 阳光
-ctx.fillStyle = radial(390, 66, 4, 220, [
-  [0, 'rgba(255, 246, 190, 0.95)'],
-  [0.45, 'rgba(255, 240, 170, 0.32)'],
-  [1, 'rgba(255, 240, 170, 0)'],
-]);
-ctx.fillRect(0, 0, SIZE, SIZE);
-
-// 云朵
-function cloud(cx, cy, s, alpha = 0.9) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = '#ffffff';
-  [
-    [-30, 4, 20],
-    [0, -8, 26],
-    [28, 4, 19],
-    [12, 10, 19],
-  ].forEach(([dx, dy, r]) => {
-    ctx.beginPath();
-    ctx.arc(cx + dx * s, cy + dy * s, r * s, 0, Math.PI * 2);
-    ctx.fill();
-  });
-  ctx.restore();
+function line(x0, y0, x1, y1, color, width = 1) {
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.stroke();
 }
-cloud(92, 92, 1.15);
-cloud(410, 178, 0.8, 0.8);
-cloud(230, 60, 0.62, 0.7);
 
-// 草地
-ctx.fillStyle = lin(0, 360, 0, SIZE, [
-  [0, '#a5e878'],
-  [1, '#79cd52'],
-]);
-ctx.beginPath();
-ctx.moveTo(0, 380);
-ctx.quadraticCurveTo(130, 340, 256, 372);
-ctx.quadraticCurveTo(390, 404, SIZE, 360);
-ctx.lineTo(SIZE, SIZE);
-ctx.lineTo(0, SIZE);
-ctx.closePath();
-ctx.fill();
-
-// 小路
-ctx.fillStyle = '#ffeccd';
-ctx.beginPath();
-ctx.moveTo(212, 374);
-ctx.quadraticCurveTo(180, 440, 120, SIZE);
-ctx.lineTo(392, SIZE);
-ctx.quadraticCurveTo(336, 440, 300, 374);
-ctx.closePath();
-ctx.fill();
-
-// 光晕衬托
-ctx.fillStyle = radial(256, 240, 30, 250, [
-  [0, 'rgba(255,255,255,0.55)'],
-  [0.6, 'rgba(255,255,255,0.16)'],
-  [1, 'rgba(255,255,255,0)'],
+// ---- 深色竞技场底 ----
+ctx.fillStyle = lin(0, 0, 0, SIZE, [
+  [0, '#04070f'],
+  [0.45, '#081426'],
+  [1, '#0a1b30'],
 ]);
 ctx.fillRect(0, 0, SIZE, SIZE);
 
-// 馆长
-const keeper = await loadImage(path.join(ROOT, 'assets/story/role4-1.png'));
-const keepW = 320;
-const keepH = (keeper.height / keeper.width) * keepW;
-ctx.drawImage(keeper, (SIZE - keepW) / 2, 58, keepW, keepH);
+ctx.fillStyle = radial(408, 58, 0, 260, [
+  [0, 'rgba(94, 231, 255, 0.2)'],
+  [0.55, 'rgba(94, 231, 255, 0.06)'],
+  [1, 'rgba(94, 231, 255, 0)'],
+]);
+ctx.fillRect(0, 0, SIZE, SIZE);
 
-// 标题胶囊
-const pillW = 320;
-const pillH = 82;
-const pillX = (SIZE - pillW) / 2;
-const pillY = 400;
+ctx.fillStyle = radial(52, 486, 0, 300, [
+  [0, 'rgba(255, 70, 70, 0.18)'],
+  [0.55, 'rgba(255, 70, 70, 0.05)'],
+  [1, 'rgba(255, 70, 70, 0)'],
+]);
+ctx.fillRect(0, 0, SIZE, SIZE);
+
+// ---- 透视网格 ----
+const horizon = 300;
 ctx.save();
-ctx.shadowColor = 'rgba(24, 96, 60, 0.4)';
-ctx.shadowBlur = 18;
-ctx.shadowOffsetY = 8;
+ctx.globalAlpha = 0.5;
+for (let i = 0; i <= 8; i += 1) {
+  const x = (SIZE / 8) * i;
+  line(256 + (x - 256) * 0.14, horizon, x - 150, SIZE + 10, 'rgba(94,231,255,0.12)', 1);
+}
+for (let i = 0; i < 6; i += 1) {
+  const p = i / 6;
+  const y = horizon + (SIZE - horizon) * p * p;
+  line(0, y, SIZE, y, `rgba(94,231,255,${0.04 + p * 0.06})`, 1);
+}
+ctx.restore();
+
+// ---- 玩家屏幕外框 ----
+ctx.save();
+ctx.shadowColor = 'rgba(94, 231, 255, 0.7)';
+ctx.shadowBlur = 34;
+rr(46, 42, 420, 370, 54);
+ctx.fillStyle = '#07111d';
+ctx.fill();
+ctx.restore();
+
+rr(52, 48, 408, 358, 48);
+ctx.fillStyle = lin(56, 48, 56, 406, [
+  [0, '#0c1e33'],
+  [1, '#07111d'],
+]);
+ctx.fill();
+ctx.strokeStyle = 'rgba(94, 231, 255, 0.7)';
+ctx.lineWidth = 3;
+ctx.stroke();
+
+// 内屏
+const screen = { x: 68, y: 64, w: 376, h: 324, r: 34 };
+rr(screen.x, screen.y, screen.w, screen.h, screen.r);
+ctx.fillStyle = lin(screen.x, screen.y, screen.x, screen.y + screen.h, [
+  [0, '#06101f'],
+  [1, '#0a2440'],
+]);
+ctx.fill();
+ctx.save();
+ctx.clip();
+
+// 内屏光晕
+ctx.fillStyle = radial(256, 248, 20, 220, [
+  [0, 'rgba(94, 231, 255, 0.2)'],
+  [1, 'rgba(94, 231, 255, 0)'],
+]);
+ctx.fillRect(screen.x, screen.y, screen.w, screen.h);
+
+// 扫描线
+ctx.fillStyle = 'rgba(130, 230, 255, 0.05)';
+for (let y = screen.y; y < screen.y + screen.h; y += 4) {
+  ctx.fillRect(screen.x, y, screen.w, 1);
+}
+
+// 淡网格
+ctx.strokeStyle = 'rgba(94, 231, 255, 0.08)';
+ctx.lineWidth = 1;
+for (let x = screen.x + 32; x < screen.x + screen.w; x += 64) {
+  line(x, screen.y + 10, x, screen.y + screen.h - 10, 'rgba(94,231,255,0.08)', 1);
+}
+for (let y = screen.y + 40; y < screen.y + screen.h; y += 56) {
+  line(screen.x + 10, y, screen.x + screen.w - 10, y, 'rgba(94,231,255,0.06)', 1);
+}
+ctx.restore();
+
+// 屏幕内框霓虹
+rr(screen.x, screen.y, screen.w, screen.h, screen.r);
+ctx.strokeStyle = 'rgba(120, 238, 255, 0.9)';
+ctx.lineWidth = 3;
+ctx.stroke();
+rr(screen.x + 12, screen.y + 12, screen.w - 24, screen.h - 24, screen.r - 12);
+ctx.strokeStyle = 'rgba(94, 231, 255, 0.18)';
+ctx.lineWidth = 1;
+ctx.stroke();
+
+// ---- 中央馆长 · 书灵 ----
+const keeper = await loadImage(path.join(ROOT, 'assets/story/role4-1.png'));
+const keepW = 270;
+const keepH = (keeper.height / keeper.width) * keepW;
+const keepX = (SIZE - keepW) / 2;
+const keepY = 76;
+ctx.save();
+ctx.shadowColor = 'rgba(94, 231, 255, 0.55)';
+ctx.shadowBlur = 28;
+ctx.drawImage(keeper, keepX, keepY, keepW, keepH);
+ctx.restore();
+
+// ---- 屏幕标签 ----
+ctx.fillStyle = '#ff5c5c';
+ctx.beginPath();
+ctx.arc(92, 88, 5, 0, Math.PI * 2);
+ctx.fill();
+ctx.fillStyle = '#ff8a8a';
+ctx.font = '700 14px "Microsoft YaHei"';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.fillText('LIVE', 104, 89);
+
+ctx.fillStyle = 'rgba(130, 235, 255, 0.26)';
+ctx.font = '900 46px "Microsoft YaHei"';
+ctx.textAlign = 'left';
+ctx.fillText('1P', 86, 144);
+
+ctx.fillStyle = 'rgba(210, 248, 255, 0.86)';
+ctx.font = '700 14px "Microsoft YaHei"';
+ctx.textAlign = 'right';
+ctx.fillText('READY', 430, 368);
+
+// 红色角标
+ctx.strokeStyle = 'rgba(255, 90, 90, 0.9)';
+ctx.lineWidth = 3;
+line(84, 106, 120, 106, 'rgba(255,90,90,0.9)', 3);
+line(392, 372, 428, 372, 'rgba(255,90,90,0.9)', 3);
+
+// ---- 底部品牌胶囊 ----
+const pillW = 300;
+const pillH = 72;
+const pillX = (SIZE - pillW) / 2;
+const pillY = 420;
+
+ctx.save();
+ctx.shadowColor = 'rgba(93, 242, 160, 0.55)';
+ctx.shadowBlur = 24;
+ctx.shadowOffsetY = 6;
 rr(pillX, pillY, pillW, pillH, pillH / 2);
 ctx.fillStyle = lin(0, pillY, 0, pillY + pillH, [
-  [0, '#9ceb74'],
-  [0.55, '#4bcd55'],
-  [1, '#2eb43d'],
+  [0, '#0b1a2e'],
+  [1, '#07111d'],
 ]);
 ctx.fill();
 ctx.restore();
 
-// 白色果冻外壳
 rr(pillX, pillY, pillW, pillH, pillH / 2);
-ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-ctx.lineWidth = 4;
+ctx.strokeStyle = '#5df2a0';
+ctx.lineWidth = 3;
 ctx.stroke();
-rr(pillX + 8, pillY + 8, pillW - 16, pillH - 16, (pillH - 16) / 2);
-ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-ctx.lineWidth = 1.5;
+rr(pillX + 7, pillY + 7, pillW - 14, pillH - 14, (pillH - 14) / 2);
+ctx.strokeStyle = 'rgba(93, 242, 160, 0.28)';
+ctx.lineWidth = 1;
 ctx.stroke();
 
-// 高光
-ctx.save();
-rr(pillX + 18, pillY + 12, pillW * 0.34, pillH * 0.22, pillH * 0.11);
-ctx.fillStyle = 'rgba(255,255,255,0.55)';
-ctx.fill();
-ctx.restore();
-
-ctx.font = '800 50px "Microsoft YaHei"';
+ctx.font = '800 44px "Microsoft YaHei"';
 ctx.textAlign = 'center';
 ctx.textBaseline = 'middle';
 ctx.save();
-ctx.globalAlpha = 0.3;
-ctx.fillStyle = '#1c7a2e';
-ctx.fillText('梗世界', SIZE / 2, pillY + pillH / 2 + 4);
+ctx.globalAlpha = 0.55;
+ctx.fillStyle = '#000000';
+ctx.fillText('梗世界', SIZE / 2, pillY + pillH / 2 + 3);
 ctx.restore();
 ctx.fillStyle = '#ffffff';
-ctx.fillText('梗世界', SIZE / 2, pillY + pillH / 2 + 1);
+ctx.fillText('梗世界', SIZE / 2, pillY + pillH / 2);
 
-// 星星点缀
-function star(cx, cy, outer, inner, color) {
+// ---- 粒子 / 点缀 ----
+function dot(x, y, r, color) {
   ctx.beginPath();
-  for (let i = 0; i < 10; i += 1) {
-    const r = i % 2 === 0 ? outer : inner;
-    const a = (Math.PI / 5) * i - Math.PI / 2;
-    const x = cx + Math.cos(a) * r;
-    const y = cy + Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
 }
-star(70, 220, 15, 6, '#ffe17a');
-star(438, 300, 12, 5, '#ffd75e');
-star(432, 96, 9, 4, '#fff3b0');
+dot(78, 232, 3, 'rgba(94,231,255,0.8)');
+dot(438, 250, 2, 'rgba(255,120,120,0.75)');
+dot(410, 330, 2.5, 'rgba(255,207,106,0.75)');
+dot(96, 352, 2, 'rgba(94,231,255,0.55)');
+dot(250, 40, 2, 'rgba(255,207,106,0.65)');
+
+// 暗角
+ctx.fillStyle = radial(256, 256, 190, 360, [
+  [0, 'rgba(0,0,0,0)'],
+  [1, 'rgba(0,0,0,0.45)'],
+]);
+ctx.fillRect(0, 0, SIZE, SIZE);
 
 const outDir = path.join(ROOT, 'docs', 'branding');
 fs.mkdirSync(outDir, { recursive: true });
@@ -202,6 +269,8 @@ console.log('wrote app-icon-512.png');
 
 const small = createCanvas(144, 144);
 const smallCtx = small.getContext('2d');
+smallCtx.imageSmoothingEnabled = true;
+smallCtx.imageSmoothingQuality = 'high';
 smallCtx.drawImage(canvas, 0, 0, 144, 144);
 fs.writeFileSync(path.join(outDir, 'app-icon-144.png'), await small.encode('png'));
 console.log('wrote app-icon-144.png');

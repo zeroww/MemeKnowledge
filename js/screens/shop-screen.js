@@ -9,7 +9,6 @@ import {
   drawPill,
   drawText,
   drawTopSheen,
-  fillCircle,
   fillRoundRect,
   font,
   hexToRgba,
@@ -153,7 +152,7 @@ export default class ShopScreen extends BaseScreen {
 
     const coinW = sz(84);
     const coinX = RIGHT_SAFE_X - coinW;
-    drawCoinPill(ctx, coinX, top + sz(2), coinW, sz(28), this.profile.coins);
+    drawCoinPill(ctx, coinX, top + sz(2), coinW, sz(28), this.profile.coins, { dark: true });
 
     drawText(ctx, '主题皮肤', x, gridY - sz(14), {
       font: font(sz(12), '700'),
@@ -185,18 +184,18 @@ export default class ShopScreen extends BaseScreen {
     const owned = this.profile.ownedSkins.includes(skin.id);
     const equipped = this.profile.equippedSkin === skin.id;
 
-    const cardTop = mixHex(skinTheme.bgTop, '#ffffff', 0.62);
-    const cardBottom = mixHex(skinTheme.bgBottom, '#ffffff', 0.24);
+    const cardTop = mixHex(skinTheme.panel || '#0a1424', '#ffffff', 0.04);
+    const cardBottom = mixHex(skinTheme.panelSoft || '#0e1c30', '#ffffff', 0.02);
     const gradient = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.h);
     gradient.addColorStop(0, cardTop);
     gradient.addColorStop(1, cardBottom);
     ctx.save();
-    ctx.shadowColor = 'rgba(58, 122, 180, 0.2)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
     ctx.shadowBlur = sz(14);
     ctx.shadowOffsetY = sz(5);
     fillRoundRect(ctx, card.x, card.y, card.w, card.h, sz(18), gradient);
     ctx.restore();
-    drawTopSheen(ctx, card.x, card.y, card.w, card.h, sz(18), 0.45);
+    drawTopSheen(ctx, card.x, card.y, card.w, card.h, sz(18), 0.12);
     strokeRoundRect(
       ctx,
       card.x,
@@ -204,16 +203,8 @@ export default class ShopScreen extends BaseScreen {
       card.w,
       card.h,
       sz(18),
-      equipped ? hexToRgba(skinTheme.primary, 0.9) : 'rgba(255,255,255,0.9)',
+      equipped ? hexToRgba(skinTheme.primary, 0.9) : 'rgba(94,231,255,0.35)',
       equipped ? sz(2.4) : sz(1.6)
-    );
-
-    fillCircle(
-      ctx,
-      card.x + card.w - sz(16),
-      card.y + card.h - sz(26),
-      sz(28),
-      hexToRgba(skinTheme.primary, 0.1)
     );
 
     const tileSize = sz(52);
@@ -229,30 +220,30 @@ export default class ShopScreen extends BaseScreen {
 
     drawText(ctx, skin.name, card.x + sz(12), card.y + sz(76), {
       font: font(sz(15), '800'),
-      color: '#1f4e9c',
+      color: skinTheme.text || '#e8f7ff',
       baseline: 'middle',
     });
     drawText(ctx, skin.desc, card.x + sz(12), card.y + sz(95), {
       font: font(sz(9), '500'),
-      color: '#6b8fb4',
+      color: skinTheme.muted || '#7fa6c9',
       baseline: 'middle',
     });
 
     if (equipped) {
       drawPill(ctx, '使用中', card.x + sz(12), card.y + card.h - sz(16), {
         fontStr: font(sz(9), '800'),
-        color: '#ffffff',
-        bg: skinTheme.primary,
-        border: 'rgba(255,255,255,0.6)',
+        color: skinTheme.primary,
+        bg: 'rgba(4, 10, 18, 0.5)',
+        border: hexToRgba(skinTheme.primary, 0.7),
         height: sz(18),
         padX: sz(8),
       });
     } else if (owned) {
       drawPill(ctx, '已拥有', card.x + sz(12), card.y + card.h - sz(16), {
         fontStr: font(sz(9), '800'),
-        color: '#ffffff',
-        bg: '#3a97f7',
-        border: 'rgba(255,255,255,0.6)',
+        color: '#9ff4ff',
+        bg: 'rgba(4, 10, 18, 0.5)',
+        border: 'rgba(94,231,255,0.6)',
         height: sz(18),
         padX: sz(8),
       });
@@ -260,7 +251,7 @@ export default class ShopScreen extends BaseScreen {
       drawCoin(ctx, card.x + card.w - sz(62), card.y + card.h - sz(16), sz(9), '#ffc531');
       drawText(ctx, String(skin.price), card.x + card.w - sz(12), card.y + card.h - sz(16), {
         font: font(sz(13), '800'),
-        color: '#c88a00',
+        color: '#ffcf6a',
         align: 'right',
         baseline: 'middle',
       });

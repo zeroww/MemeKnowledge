@@ -194,11 +194,11 @@ export default class LeaderboardScreen extends BaseScreen {
         }
         drawText(drawCtx, String(this.data.entries.indexOf(entry) + 1), row.x + sz(18), screenY + row.h / 2, {
           font: font(sz(13), '800'),
-          color: isPlayer ? theme.primary : index < 3 ? '#f5a300' : theme.muted,
+          color: isPlayer ? theme.primary : index < 3 ? '#ffcf6a' : theme.muted,
           align: 'center',
           baseline: 'middle',
         });
-        fillCircle(drawCtx, row.x + sz(42), screenY + row.h / 2, sz(15), '#dff2ff');
+        fillCircle(drawCtx, row.x + sz(42), screenY + row.h / 2, sz(15), 'rgba(94, 231, 255, 0.12)');
         drawIcon(drawCtx, 'user', row.x + sz(42), screenY + row.h / 2 + sz(1), sz(22));
         drawText(drawCtx, entry.nickname, row.x + sz(64), screenY + row.h / 2 - sz(6), {
           font: font(sz(13), isPlayer ? '800' : '600'),

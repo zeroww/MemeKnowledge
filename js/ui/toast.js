@@ -56,16 +56,16 @@ export default class Toast {
     ctx.globalAlpha = alpha;
     ctx.translate(0, rise);
     ctx.save();
-    ctx.shadowColor = 'rgba(58, 122, 180, 0.22)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
     ctx.shadowBlur = sz(18);
     ctx.shadowOffsetY = sz(6);
-    fillRoundRect(ctx, x, y, panelW, panelH, sz(18), '#ffffff');
+    fillRoundRect(ctx, x, y, panelW, panelH, sz(18), '#0a1626');
     ctx.restore();
-    strokeRoundRect(ctx, x, y, panelW, panelH, sz(18), '#bfe4f8', 1.5);
-    fillCircle(ctx, x + sz(14), y + panelH / 2, sz(6), 'rgba(58,151,247,0.16)');
-    fillCircle(ctx, x + sz(14), y + panelH / 2, sz(2.8), '#3a97f7');
+    strokeRoundRect(ctx, x, y, panelW, panelH, sz(18), 'rgba(94,231,255,0.55)', 1.5);
+    fillCircle(ctx, x + sz(14), y + panelH / 2, sz(6), 'rgba(94,231,255,0.18)');
+    fillCircle(ctx, x + sz(14), y + panelH / 2, sz(2.8), '#5ee7ff');
     ctx.font = font(sz(13), '600');
-    ctx.fillStyle = '#1f4e9c';
+    ctx.fillStyle = '#e8f7ff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     lines.forEach((line, index) => {

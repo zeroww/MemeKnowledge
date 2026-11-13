@@ -906,7 +906,7 @@ export default class GameScreen extends BaseScreen {
     const now = Date.now();
     const shakePower = now < this.shakeUntil ? (this.shakeUntil - now) / 320 : 0;
 
-    ctx.fillStyle = 'rgba(170, 215, 255, 0.12)';
+    ctx.fillStyle = 'rgba(8, 24, 44, 0.22)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     ctx.save();
@@ -945,12 +945,12 @@ export default class GameScreen extends BaseScreen {
 
     drawCandyPanel(ctx, hud.x, hud.y, hud.w, hud.h, radius, {
       headerHeight: sz(32),
-      headerColor: 'rgba(214, 241, 255, 0.95)',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      headerColor: 'rgba(12, 32, 52, 0.95)',
+      border: 'rgba(94, 231, 255, 0.45)',
+      shadowColor: 'rgba(0, 0, 0, 0.5)',
       shadowBlur: sz(18),
       shadowOffsetY: sz(6),
-      glossAlpha: 0.5,
+      glossAlpha: 0.14,
     });
 
     this.pauseButton.setRect(x - sz(1), top - sz(3), sz(30), sz(30));
@@ -958,17 +958,17 @@ export default class GameScreen extends BaseScreen {
 
     drawText(ctx, '答题页', x + sz(38), top + sz(8), {
       font: font(sz(15), '800'),
-      color: '#1f4e9c',
+      color: theme.text,
       baseline: 'top',
     });
 
     drawText(ctx, `第 ${this.run.index + 1} / ${this.run.totalQuestions} 题`, x + sz(42), top + sz(36), {
       font: font(sz(12), '800'),
-      color: '#2f6fc0',
+      color: '#9ff4ff',
       baseline: 'top',
     });
     const progressW = Math.min(sz(90), w * 0.32);
-    fillRoundRect(ctx, x + sz(42), top + sz(56), progressW, sz(5), sz(2.5), '#dceffb');
+    fillRoundRect(ctx, x + sz(42), top + sz(56), progressW, sz(5), sz(2.5), '#12304a');
     fillRoundRect(
       ctx,
       x + sz(42),
@@ -976,7 +976,7 @@ export default class GameScreen extends BaseScreen {
       Math.max(sz(5), (progressW * (this.run.index + 1)) / this.run.totalQuestions),
       sz(5),
       sz(2.5),
-      '#35b84a'
+      '#5ee7ff'
     );
     renderLives(ctx, x + sz(42), top + sz(70), this.run.lives, 3, theme, sz(12), sz(5));
 
@@ -985,10 +985,10 @@ export default class GameScreen extends BaseScreen {
     const scoreW = sz(72);
     const scoreX = RIGHT_SAFE_X - scoreW;
     const scoreY = top + sz(53);
-    fillRoundRect(ctx, scoreX, scoreY, scoreW, sz(18), sz(9), 'rgba(255, 197, 49, 0.22)');
+    fillRoundRect(ctx, scoreX, scoreY, scoreW, sz(18), sz(9), 'rgba(255, 207, 106, 0.14)');
     drawText(ctx, `得分 ${this.run.score}`, scoreX + scoreW / 2, scoreY + sz(9), {
       font: font(sz(10.5), '800'),
-      color: '#c88a00',
+      color: '#ffcf6a',
       align: 'center',
       baseline: 'middle',
     });
@@ -1018,15 +1018,15 @@ export default class GameScreen extends BaseScreen {
 
     drawCandyPanel(ctx, questionCard.x, questionCard.y, questionCard.w, questionCard.h, sz(22), {
       headerHeight: sz(30),
-      headerColor: 'rgba(219, 242, 255, 0.96)',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(58, 122, 180, 0.22)',
+      headerColor: 'rgba(12, 32, 52, 0.95)',
+      border: 'rgba(94, 231, 255, 0.42)',
+      shadowColor: 'rgba(0, 0, 0, 0.5)',
       shadowBlur: sz(20),
       shadowOffsetY: sz(7),
-      glossAlpha: 0.45,
+      glossAlpha: 0.12,
     });
 
-    const typeColor = question.isBoss ? theme.danger : '#3a97f7';
+    const typeColor = question.isBoss ? '#8a2027' : '#0d3a55';
     const typeIcon =
       { image: 'image', dialogue: 'chat', truefalse: 'quiz', meaning: 'book' }[question.type] ||
       'quiz';
@@ -1038,16 +1038,16 @@ export default class GameScreen extends BaseScreen {
       typeRowY + sz(12),
       {
         fontStr: font(sz(10), '800'),
-        color: '#ffffff',
+        color: question.isBoss ? '#ffd0d0' : '#c9f5ff',
         bg: typeColor,
-        border: 'rgba(255,255,255,0.5)',
+        border: question.isBoss ? 'rgba(255,138,138,0.7)' : 'rgba(94,231,255,0.55)',
         height: sz(22),
         padX: sz(9),
       }
     );
 
     ctx.font = font(stemSize, '800');
-    ctx.fillStyle = '#1f4e9c';
+    ctx.fillStyle = theme.text;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     stemLines.forEach((line, index) => {
@@ -1066,7 +1066,7 @@ export default class GameScreen extends BaseScreen {
         w,
         hintH,
         sz(12),
-        'rgba(255, 242, 203, 0.98)'
+        'rgba(43, 33, 10, 0.96)'
       );
       strokeRoundRect(
         ctx,
@@ -1075,7 +1075,7 @@ export default class GameScreen extends BaseScreen {
         w,
         hintH,
         sz(12),
-        'rgba(214, 158, 32, 0.34)',
+        'rgba(255, 224, 138, 0.4)',
         1
       );
       fillRoundRect(
@@ -1085,15 +1085,15 @@ export default class GameScreen extends BaseScreen {
         sz(2.5),
         hintH - sz(16),
         sz(1.2),
-        '#e0a21d'
+        '#ffcf6a'
       );
       drawText(ctx, '提示', x + sz(18), hintTop + sz(9), {
         font: font(sz(10), '800'),
-        color: '#a05a00',
+        color: '#ffe08a',
         baseline: 'top',
       });
       ctx.font = font(sz(12), '600');
-      ctx.fillStyle = '#4b3a18';
+      ctx.fillStyle = '#f3e2b0';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       hintLines.forEach((line, index) => {
@@ -1114,8 +1114,8 @@ export default class GameScreen extends BaseScreen {
         ctx.save();
         ctx.globalAlpha = 0.9;
         const glow = ctx.createRadialGradient(cx, iconY, sz(4), cx, iconY, sz(46));
-        glow.addColorStop(0, 'rgba(255, 214, 90, 0.35)');
-        glow.addColorStop(1, 'rgba(255, 214, 90, 0)');
+        glow.addColorStop(0, 'rgba(94, 231, 255, 0.24)');
+        glow.addColorStop(1, 'rgba(94, 231, 255, 0)');
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(cx, iconY, sz(46), 0, Math.PI * 2);
@@ -1124,7 +1124,7 @@ export default class GameScreen extends BaseScreen {
         drawIcon(ctx, 'bulb', cx, iconY, sz(46));
         drawText(ctx, '仔细想想，再选答案', cx, iconY + sz(38), {
           font: font(sz(12), '700'),
-          color: '#7fa3c6',
+          color: '#7fa6c9',
           align: 'center',
           baseline: 'middle',
         });
@@ -1135,13 +1135,13 @@ export default class GameScreen extends BaseScreen {
   renderImageCard(ctx, theme, x, y, w, h, question) {
     if (!h) return;
     drawCandyPanel(ctx, x, y, w, h, sz(16), {
-      fill: '#ffffff',
-      fillBottom: '#eaf9ff',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(58, 122, 180, 0.16)',
+      fill: '#0a1a2a',
+      fillBottom: '#0e2438',
+      border: 'rgba(94, 231, 255, 0.35)',
+      shadowColor: 'rgba(0, 0, 0, 0.4)',
       shadowBlur: sz(10),
       shadowOffsetY: sz(4),
-      glossAlpha: 0.4,
+      glossAlpha: 0.1,
     });
 
     const visual = question.visual || { emojis: ['🎭'], caption: '' };
@@ -1159,7 +1159,7 @@ export default class GameScreen extends BaseScreen {
 
     if (visual.caption) {
       ctx.font = font(sz(12), '600');
-      ctx.fillStyle = '#4a7cba';
+      ctx.fillStyle = '#9ff4ff';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(visual.caption, x + w / 2, y + h * 0.79);
@@ -1181,14 +1181,14 @@ export default class GameScreen extends BaseScreen {
     const panelY = SCREEN_HEIGHT - SAFE_BOTTOM - sz(14) - panelH;
 
     drawCandyPanel(ctx, x, panelY, w, panelH, sz(22), {
-      fill: '#ffffff',
-      fillBottom: '#eefaff',
+      fill: '#0a1626',
+      fillBottom: '#0e2138',
       border: color,
-      borderAlpha: 0.55,
-      shadowColor: hexToRgba(color, 0.28),
+      borderAlpha: 0.6,
+      shadowColor: hexToRgba(color, 0.3),
       shadowBlur: sz(24),
       shadowOffsetY: sz(9),
-      glossAlpha: 0.5,
+      glossAlpha: 0.12,
       lineWidth: 2,
     });
 
@@ -1213,14 +1213,14 @@ export default class GameScreen extends BaseScreen {
       const gained = this.feedback.gained || 0;
       drawText(ctx, `+${gained} 分`, x + w - sz(16), panelY + sz(19), {
         font: font(sz(15), '900'),
-        color: '#c88a00',
+        color: '#ffcf6a',
         align: 'right',
         baseline: 'top',
       });
     } else {
       drawText(ctx, `正确答案：${this.feedback.answerText}`, x + sz(16), panelY + sz(50), {
         font: font(sz(12), '800'),
-        color: '#1f4e9c',
+        color: theme.text,
         baseline: 'top',
       });
     }
@@ -1228,7 +1228,7 @@ export default class GameScreen extends BaseScreen {
     measureCtx.font = font(sz(12), '500');
     const explanationLines = wrapText(measureCtx, this.feedback.explanation || '', w - sz(32), 2);
     ctx.font = font(sz(12), '500');
-    ctx.fillStyle = 'rgba(74, 108, 146, 0.92)';
+    ctx.fillStyle = 'rgba(190, 225, 245, 0.72)';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     const explanationTop = isCorrect ? panelY + sz(52) : panelY + sz(74);
@@ -1243,9 +1243,9 @@ export default class GameScreen extends BaseScreen {
         : '点击继续';
     drawPill(ctx, footer, x + w - sz(14), panelY + panelH - sz(16), {
       fontStr: font(sz(10), '800'),
-      color: '#ffffff',
-      bg: color,
-      border: 'rgba(255,255,255,0.28)',
+      color: color,
+      bg: 'rgba(4, 10, 18, 0.5)',
+      border: hexToRgba(color, 0.6),
       height: sz(22),
       padX: sz(10),
       align: 'right',
@@ -1264,7 +1264,7 @@ export default class GameScreen extends BaseScreen {
         w - sz(32),
         sz(3),
         sz(1.5),
-        'rgba(80, 70, 55, 0.12)'
+        'rgba(18, 48, 74, 0.8)'
       );
       fillRoundRect(
         ctx,

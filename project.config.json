@@ -55,6 +55,7 @@
       { "type": "folder", "value": ".claude" },
       { "type": "folder", "value": ".idea" },
       { "type": "folder", "value": "assets/ui/icons" },
+      { "type": "file", "value": "assets/ui/generated-image.png" },
       { "type": "file", "value": "package.json" },
       { "type": "file", "value": "README.md" },
       { "type": "file", "value": ".eslintrc.js" }

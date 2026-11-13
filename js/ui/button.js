@@ -61,6 +61,104 @@ const SOFT = {
 
 const FILLED = new Set(['primary', 'gold', 'danger', 'success', 'hero']);
 
+const NEON = {
+  green: {
+    stops: ['#0f2f22', '#1c6b3c', '#2e9d54'],
+    edge: '#5df2a0',
+    glow: 'rgba(93, 242, 160, 0.42)',
+    text: '#f2fff7',
+    filled: true,
+  },
+  cyan: {
+    stops: ['#081a2c', '#0d3a55', '#12688f'],
+    edge: '#5ee7ff',
+    glow: 'rgba(94, 231, 255, 0.4)',
+    text: '#ecfdff',
+    filled: true,
+  },
+  blue: {
+    stops: ['#0b2036', '#155b8f', '#1f8fd8'],
+    edge: '#6fe3ff',
+    glow: 'rgba(111, 227, 255, 0.4)',
+    text: '#f2fdff',
+    filled: true,
+  },
+  gold: {
+    stops: ['#2b210a', '#8a6a12', '#d6a41a'],
+    edge: '#ffe08a',
+    glow: 'rgba(255, 224, 138, 0.4)',
+    text: '#fff9e6',
+    filled: true,
+  },
+  red: {
+    stops: ['#2b0d10', '#8a2027', '#d83a42'],
+    edge: '#ff8a8a',
+    glow: 'rgba(255, 92, 100, 0.45)',
+    text: '#fff3f3',
+    filled: true,
+  },
+  purple: {
+    stops: ['#1d1236', '#5a2f9e', '#8b5cf6'],
+    edge: '#c9a6ff',
+    glow: 'rgba(169, 124, 255, 0.42)',
+    text: '#f8f2ff',
+    filled: true,
+  },
+  pink: {
+    stops: ['#2b1220', '#8a2b58', '#d44a8b'],
+    edge: '#ffa8d4',
+    glow: 'rgba(255, 122, 184, 0.42)',
+    text: '#fff4fa',
+    filled: true,
+  },
+  glass: {
+    stops: ['#0a1626', '#0e2238'],
+    edge: '#5ee7ff',
+    glow: 'rgba(94, 231, 255, 0.28)',
+    text: '#c9f5ff',
+    filled: false,
+  },
+  muted: {
+    stops: ['#0b1420', '#111d2c'],
+    edge: '#5a7f9e',
+    glow: 'rgba(90, 127, 158, 0.24)',
+    text: '#9fc0d8',
+    filled: false,
+  },
+};
+
+function neonFor(style) {  switch (style) {
+    case 'primary':
+    case 'success':
+    case 'candyGreen':
+    case 'softMint':
+      return NEON.green;
+    case 'candyBlue':
+      return NEON.blue;
+    case 'dark':
+    case 'ghost':
+    case 'secondary':
+    case 'softSky':
+      return NEON.glass;
+    case 'candyOrange':
+    case 'gold':
+    case 'hero':
+    case 'softSun':
+      return NEON.gold;
+    case 'candyPurple':
+    case 'softViolet':
+      return NEON.purple;
+    case 'candyPink':
+      return NEON.pink;
+    case 'danger':
+      return NEON.red;
+    case 'quiet':
+      return NEON.muted;
+    default:
+      return NEON.glass;
+  }
+}
+
 function stopsFor(style, theme) {
   if (CANDY[style]) {
     return { ...CANDY[style], text: '#ffffff', filled: true };
@@ -128,6 +226,58 @@ function stopsFor(style, theme) {
     };
   }
   return null;
+}
+
+const NEON_GLYPHS = new Set(['back', 'play', 'pause', 'close']);
+
+/** 圆形导航键的霓虹线性符号（替换糖果圆形图标） */
+function drawNeonGlyph(ctx, name, cx, cy, size, color) {
+  const s = size / 2;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1.6, size * 0.1);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = size * 0.28;
+
+  if (name === 'back') {
+    ctx.beginPath();
+    ctx.moveTo(cx + s * 0.28, cy - s * 0.46);
+    ctx.lineTo(cx - s * 0.3, cy);
+    ctx.lineTo(cx + s * 0.28, cy + s * 0.46);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.24, cy);
+    ctx.lineTo(cx + s * 0.36, cy);
+    ctx.stroke();
+  } else if (name === 'play') {
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.28, cy - s * 0.48);
+    ctx.lineTo(cx + s * 0.46, cy);
+    ctx.lineTo(cx - s * 0.28, cy + s * 0.48);
+    ctx.closePath();
+    ctx.fill();
+  } else if (name === 'pause') {
+    ctx.lineWidth = Math.max(2, s * 0.32);
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.24, cy - s * 0.4);
+    ctx.lineTo(cx - s * 0.24, cy + s * 0.4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + s * 0.24, cy - s * 0.4);
+    ctx.lineTo(cx + s * 0.24, cy + s * 0.4);
+    ctx.stroke();
+  } else if (name === 'close') {
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.4, cy - s * 0.4);
+    ctx.lineTo(cx + s * 0.4, cy + s * 0.4);
+    ctx.moveTo(cx + s * 0.4, cy - s * 0.4);
+    ctx.lineTo(cx - s * 0.4, cy + s * 0.4);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 export default class Button {
@@ -204,6 +354,11 @@ export default class Button {
 
   render(ctx, theme) {
     if (!this.visible) return;
+
+    if (theme.uiMode !== 'candy') {
+      this.renderNeon(ctx, theme);
+      return;
+    }
 
     const size = stopsFor(this.style, theme);
     const filled = !!size && size.filled;
@@ -432,6 +587,214 @@ export default class Button {
     if (hasSub) {
       ctx.font = font(this.subFontSize, '600');
       ctx.fillStyle = filled ? 'rgba(255,255,255,0.82)' : hexToRgba(textColor, 0.78);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(this.subLabel), this.x + this.w / 2, this.y + this.h * 0.73);
+    }
+
+    ctx.restore();
+  }
+
+  /** 深色霓虹按钮（非首页界面统一使用） */
+  renderNeon(ctx) {
+    const spec = neonFor(this.style);
+    const radius = clamp(this.radius, 0, Math.min(this.w, this.h) / 2);
+    const alpha = this.disabled ? 0.42 : 1;
+    const pressedScale = this.pressed && !this.disabled ? 0.972 : 1;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    if (pressedScale !== 1) {
+      const ccx = this.x + this.w / 2;
+      const ccy = this.y + this.h / 2;
+      ctx.translate(ccx, ccy);
+      ctx.scale(pressedScale, pressedScale);
+      ctx.translate(-ccx, -ccy);
+    }
+
+    const isIconOnly = !this.label && !this.subLabel && this.iconName && hasGlossyIcon(this.iconName);
+
+    // 纯图标按钮：深色圆盘 + 霓虹环 + 图标
+    if (isIconOnly) {
+      const r = Math.min(this.w, this.h) / 2;
+      ctx.save();
+      ctx.shadowColor = spec.glow;
+      ctx.shadowBlur = r * 0.7;
+      ctx.shadowOffsetY = r * 0.12;
+      ctx.beginPath();
+      ctx.arc(this.x + this.w / 2, this.y + this.h / 2, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#07111d';
+      ctx.fill();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(this.x + this.w / 2, this.y + this.h / 2, r - 1.5, 0, Math.PI * 2);
+      ctx.strokeStyle = spec.edge;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(this.x + this.w / 2, this.y + this.h / 2, r - 5, 0, Math.PI * 2);
+      ctx.strokeStyle = hexToRgba(spec.edge, 0.25);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      if (NEON_GLYPHS.has(this.iconName)) {
+        drawNeonGlyph(
+          ctx,
+          this.iconName,
+          this.x + this.w / 2,
+          this.y + this.h / 2,
+          r * 1.05,
+          spec.edge
+        );
+      } else {
+        drawIcon(
+          ctx,
+          this.iconName,
+          this.x + this.w / 2,
+          this.y + this.h / 2,
+          r * 1.5
+        );
+      }
+      ctx.restore();
+      return;
+    }
+    // 投影光晕
+    ctx.save();
+    ctx.shadowColor = spec.glow;
+    ctx.shadowBlur = this.h * 0.45;
+    ctx.shadowOffsetY = this.h * 0.08;
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
+    ctx.fillStyle = spec.filled ? spec.stops[1] : '#08121e';
+    ctx.fill();
+    ctx.restore();
+
+    // 主体
+    const body = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
+    if (spec.filled) {
+      body.addColorStop(0, spec.stops[0]);
+      body.addColorStop(0.52, spec.stops[1]);
+      body.addColorStop(1, spec.stops[2]);
+    } else {
+      body.addColorStop(0, spec.stops[0]);
+      body.addColorStop(0.8, spec.stops[1]);
+      body.addColorStop(1, hexToRgba(spec.edge, 0.12));
+    }
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
+    ctx.fillStyle = body;
+    ctx.fill();
+
+    // 底部内阴影
+    ctx.save();
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
+    ctx.clip();
+    const shade = ctx.createLinearGradient(0, this.y + this.h * 0.55, 0, this.y + this.h);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,0.32)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(this.x, this.y + this.h * 0.5, this.w, this.h * 0.5);
+    ctx.restore();
+
+    // 冷色高光
+    ctx.save();
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
+    ctx.clip();
+    const sheen = ctx.createLinearGradient(0, this.y, 0, this.y + this.h * 0.55);
+    sheen.addColorStop(0, 'rgba(200, 245, 255, 0.16)');
+    sheen.addColorStop(1, 'rgba(200, 245, 255, 0)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(this.x, this.y, this.w, this.h * 0.55);
+    ctx.restore();
+
+    // 外发光描边
+    ctx.save();
+    ctx.shadowColor = spec.edge;
+    ctx.shadowBlur = this.h * 0.32;
+    roundRectPath(ctx, this.x + 1, this.y + 1, this.w - 2, this.h - 2, radius - 1);
+    ctx.strokeStyle = spec.edge;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // 内侧细线
+    roundRectPath(ctx, this.x + 5, this.y + 5, this.w - 10, this.h - 10, Math.max(1, radius - 5));
+    ctx.strokeStyle = hexToRgba(spec.edge, 0.24);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 文字与图标
+    const hasSub = !!this.subLabel;
+    const labelY = hasSub ? this.y + this.h * 0.36 : this.y + this.h / 2;
+    const rawIconSize = Math.min(this.h * 0.54, this.fontSize * 1.55);
+    const iconBox = rawIconSize * 1.28;
+    const gap = sz(7);
+    const labelFontSize = hasSub ? Math.max(10, this.fontSize * 0.88) : this.fontSize;
+
+    let textStartX = this.x + this.w / 2;
+    let iconCx = 0;
+    let iconSize = 0;
+
+    if (this.iconName && hasGlossyIcon(this.iconName)) {
+      iconSize = rawIconSize;
+      ctx.font = font(labelFontSize, '800');
+      const labelW = this.label ? ctx.measureText(String(this.label)).width : 0;
+      const totalW = iconBox + (this.label ? gap + labelW : 0);
+      const startX = this.x + this.w / 2 - totalW / 2;
+      iconCx = startX + iconBox / 2;
+      textStartX = startX + iconBox + gap;
+
+      // 全息图标槽
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(iconCx, labelY, iconSize * 0.66, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(3, 9, 17, 0.66)';
+      ctx.fill();
+      ctx.strokeStyle = hexToRgba(spec.edge, 0.4);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowColor = spec.edge;
+      ctx.shadowBlur = iconSize * 0.34;
+      if (NEON_GLYPHS.has(this.iconName)) {
+        drawNeonGlyph(ctx, this.iconName, iconCx, labelY, iconSize * 0.92, spec.edge);
+      } else {
+        drawIcon(ctx, this.iconName, iconCx, labelY, iconSize * 0.9);
+      }
+      ctx.restore();
+    } else if (this.icon) {
+      ctx.font = font(rawIconSize * 0.92, '400');
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = spec.text;
+      ctx.fillText(String(this.icon), this.x + this.w * 0.28, labelY);
+    }
+
+    if (this.label) {
+      ctx.font = font(labelFontSize, '800');
+      ctx.textAlign = this.iconName ? 'left' : 'center';
+      ctx.textBaseline = 'middle';
+      ctx.save();
+      ctx.globalAlpha *= 0.5;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(
+        String(this.label),
+        textStartX,
+        labelY + Math.max(1, labelFontSize * 0.08)
+      );
+      ctx.restore();
+      ctx.fillStyle = spec.filled ? spec.text : spec.edge;
+      ctx.fillText(String(this.label), textStartX, labelY);
+    }
+
+    if (hasSub) {
+      ctx.font = font(this.subFontSize, '600');
+      ctx.fillStyle = spec.filled
+        ? 'rgba(235, 250, 255, 0.72)'
+        : hexToRgba(spec.edge, 0.72);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(this.subLabel), this.x + this.w / 2, this.y + this.h * 0.73);

@@ -1,15 +1,27 @@
 import { drawCoin, hexToRgba, roundRectPath } from './draw.js';
 
 const BADGE_STYLES = {
-  trophy: { stops: ['#ffe98f', '#ffc12a', '#f39a00'], edge: '#e08a00' },
-  cart: { stops: ['#9bdcff', '#3a97f7', '#1f6fd0'], edge: '#1a63c4' },
-  gear: { stops: ['#d9c2ff', '#a97cf2', '#7d4ae0'], edge: '#6335c4' },
+  trophy: {
+    edge: '#ffe08a',
+    glow: 'rgba(255, 224, 138, 0.5)',
+    glyph: '#ffe08a',
+  },
+  cart: {
+    edge: '#5ee7ff',
+    glow: 'rgba(94, 231, 255, 0.5)',
+    glyph: '#9ff4ff',
+  },
+  gear: {
+    edge: '#c9a6ff',
+    glow: 'rgba(201, 166, 255, 0.5)',
+    glyph: '#d9c2ff',
+  },
 };
 
-function trophyGlyph(ctx, r) {
+function trophyGlyph(ctx, r, color) {
   ctx.save();
-  ctx.strokeStyle = '#ffffff';
-  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
   ctx.lineWidth = r * 0.14;
   ctx.lineCap = 'round';
   // 杯身
@@ -34,8 +46,8 @@ function trophyGlyph(ctx, r) {
   roundRectPath(ctx, -r * 0.26, r * 0.26, r * 0.52, r * 0.12, r * 0.06);
   ctx.fill();
   // 星星
-  ctx.globalAlpha = 0.75;
-  ctx.fillStyle = '#fff3c0';
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = '#fff6d0';
   ctx.beginPath();
   for (let i = 0; i < 10; i += 1) {
     const radius = i % 2 === 0 ? r * 0.1 : r * 0.045;
@@ -50,10 +62,10 @@ function trophyGlyph(ctx, r) {
   ctx.restore();
 }
 
-function cartGlyph(ctx, r) {
+function cartGlyph(ctx, r, color) {
   ctx.save();
-  ctx.strokeStyle = '#ffffff';
-  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
   ctx.lineWidth = r * 0.13;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -78,9 +90,9 @@ function cartGlyph(ctx, r) {
   ctx.restore();
 }
 
-function gearGlyph(ctx, r, holeColor) {
+function gearGlyph(ctx, r, holeColor, color) {
   ctx.save();
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = color;
   for (let i = 0; i < 8; i += 1) {
     ctx.save();
     ctx.rotate((Math.PI / 4) * i);
@@ -101,7 +113,7 @@ function gearGlyph(ctx, r, holeColor) {
 const GLYPHS = { trophy: trophyGlyph, cart: cartGlyph, gear: gearGlyph };
 
 /**
- * 首页右上角的圆形果冻按钮（参考图：奖杯 / 购物车 / 齿轮）。
+ * 首页功能徽章：深色圆盘 + 霓虹描边 + 发光功能符号。
  */
 export function drawBadgeButton(ctx, cx, cy, r, kind, pressed = false) {
   const style = BADGE_STYLES[kind] || BADGE_STYLES.cart;
@@ -110,69 +122,83 @@ export function drawBadgeButton(ctx, cx, cy, r, kind, pressed = false) {
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
 
+  // 外发光
   ctx.save();
-  ctx.shadowColor = hexToRgba(style.edge, 0.45);
-  ctx.shadowBlur = r * 0.5;
-  ctx.shadowOffsetY = r * 0.16;
+  ctx.shadowColor = style.glow;
+  ctx.shadowBlur = r * 0.7;
+  ctx.shadowOffsetY = r * 0.12;
   const gradient = ctx.createLinearGradient(0, -r, 0, r);
-  gradient.addColorStop(0, style.stops[0]);
-  gradient.addColorStop(0.55, style.stops[1]);
-  gradient.addColorStop(1, style.stops[2]);
+  gradient.addColorStop(0, '#0b1a2e');
+  gradient.addColorStop(1, '#07111d');
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fillStyle = gradient;
   ctx.fill();
   ctx.restore();
 
-  // 白色外圈 + 顶部高光
+  // 霓虹外圈
+  ctx.save();
+  ctx.shadowColor = style.edge;
+  ctx.shadowBlur = r * 0.45;
   ctx.beginPath();
-  ctx.arc(0, 0, r - Math.max(1, r * 0.045), 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-  ctx.lineWidth = Math.max(1.4, r * 0.1);
+  ctx.arc(0, 0, r - Math.max(1, r * 0.06), 0, Math.PI * 2);
+  ctx.strokeStyle = style.edge;
+  ctx.lineWidth = Math.max(1.5, r * 0.1);
+  ctx.stroke();
+  ctx.restore();
+
+  // 内侧细线
+  ctx.beginPath();
+  ctx.arc(0, 0, r - Math.max(3, r * 0.2), 0, Math.PI * 2);
+  ctx.strokeStyle = hexToRgba(style.edge, 0.22);
+  ctx.lineWidth = 1;
   ctx.stroke();
 
+  // 顶部冷光
   ctx.save();
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.clip();
   const gloss = ctx.createLinearGradient(0, -r, 0, r * 0.4);
-  gloss.addColorStop(0, 'rgba(255,255,255,0.5)');
-  gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  gloss.addColorStop(0, 'rgba(200, 245, 255, 0.16)');
+  gloss.addColorStop(1, 'rgba(200, 245, 255, 0)');
   ctx.fillStyle = gloss;
   ctx.fillRect(-r, -r, r * 2, r * 1.4);
   ctx.restore();
 
   const glyph = GLYPHS[kind];
-  if (glyph) glyph(ctx, r, style.stops[1]);
+  if (kind === 'gear') gearGlyph(ctx, r, '#07111d', style.glyph);
+  else if (glyph) glyph(ctx, r, style.glyph);
   ctx.restore();
 }
 
 /**
- * 梗币胶囊：金币图标 + 数量。
+ * 梗币胶囊：金币图标 + 数量。默认浅色；传入 { dark: true } 使用深色霓虹底。
  */
 export function drawCoinPill(ctx, x, y, width, height, coins, options = {}) {
   const radius = height / 2;
+  const dark = options.dark === true;
   ctx.save();
-  ctx.shadowColor = 'rgba(58, 122, 180, 0.22)';
+  ctx.shadowColor = dark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(58, 122, 180, 0.22)';
   ctx.shadowBlur = height * 0.4;
   ctx.shadowOffsetY = height * 0.12;
   const gradient = ctx.createLinearGradient(0, y, 0, y + height);
-  gradient.addColorStop(0, '#ffffff');
-  gradient.addColorStop(1, '#eaf8ff');
+  gradient.addColorStop(0, dark ? '#0a1626' : '#ffffff');
+  gradient.addColorStop(1, dark ? '#0e2138' : '#eaf8ff');
   roundRectPath(ctx, x, y, width, height, radius);
   ctx.fillStyle = gradient;
   ctx.fill();
   ctx.restore();
 
   roundRectPath(ctx, x, y, width, height, radius);
-  ctx.strokeStyle = 'rgba(191, 228, 248, 0.95)';
+  ctx.strokeStyle = dark ? 'rgba(94, 231, 255, 0.45)' : 'rgba(191, 228, 248, 0.95)';
   ctx.lineWidth = Math.max(1, height * 0.05);
   ctx.stroke();
 
   drawCoin(ctx, x + height * 0.5, y + height / 2, height * 0.34, '#ffc531');
 
   ctx.font = `800 ${Math.round(height * 0.52)}px "PingFang SC", "Microsoft YaHei", sans-serif`;
-  ctx.fillStyle = '#1f4e9c';
+  ctx.fillStyle = dark ? '#e8f7ff' : '#1f4e9c';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(coins), x + height * 0.92, y + height / 2 + 0.5);

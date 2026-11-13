@@ -446,35 +446,36 @@ export function drawStar(ctx, cx, cy, outer, inner, points, color) {
 
 export function drawGlassPanel(ctx, x, y, w, h, radius, theme, alpha = 0.9, borderAlpha = 0.7) {
   drawCandyPanel(ctx, x, y, w, h, radius, {
-    fill: theme.panel || '#ffffff',
-    fillBottom: theme.panelSoft || '#f1faff',
-    border: theme.line || '#cfeafb',
+    fill: theme.panel || '#0a1424',
+    fillBottom: theme.panelSoft || '#0e1c30',
+    border: theme.line || '#1e4a6e',
     shadowAlpha: 0.16 * alpha,
     borderAlpha: Math.max(0.45, borderAlpha),
   });
 }
 
 /**
- * 参考图风格白色圆角卡片：奶油白渐变 + 浅蓝描边 + 蓝灰柔和投影 + 顶部高光。
+ * 深色霓虹圆角卡片：深色玻璃渐变 + 霓虹描边 + 黑色投影 + 顶部冷光。
  */
 export function drawCandyPanel(ctx, x, y, w, h, radius = 18, options = {}) {
   const {
-    fill = '#ffffff',
-    fillBottom = '#f2fbff',
-    border = '#cfeafb',
-    shadowColor = 'rgba(58, 122, 180, 0.18)',
+    fill = '#0a1424',
+    fillBottom = '#0e1c30',
+    border = '#1e4a6e',
+    shadowColor = 'rgba(0, 0, 0, 0.45)',
     shadowBlur = 18,
     shadowOffsetY = 7,
     shadowAlpha = 1,
     borderAlpha = 1,
     lineWidth = 1.5,
-    glossAlpha = 0.55,
+    glossAlpha = 0.12,
     headerHeight = 0,
-    headerColor = 'rgba(214, 241, 255, 0.9)',
+    headerColor = 'rgba(18, 42, 66, 0.95)',
   } = options;
 
   ctx.save();
-  ctx.shadowColor = shadowAlpha >= 1 ? shadowColor : hexToRgba('#3a7ab4', 0.18 * shadowAlpha);
+  ctx.shadowColor =
+    shadowAlpha >= 1 ? shadowColor : `rgba(0, 0, 0, ${0.45 * shadowAlpha})`;
   ctx.shadowBlur = shadowBlur;
   ctx.shadowOffsetY = shadowOffsetY;
   const gradient = ctx.createLinearGradient(x, y, x, y + h);
@@ -495,7 +496,7 @@ export function drawCandyPanel(ctx, x, y, w, h, radius = 18, options = {}) {
       w,
       1,
       0,
-      hexToRgba(border, 0.8)
+      withAlpha(border, Math.max(0.5, borderAlpha))
     );
     ctx.restore();
   }
@@ -527,7 +528,7 @@ export function drawPill(ctx, text, x, y, options = {}) {
     align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
   if (shadow) {
     ctx.save();
-    ctx.shadowColor = 'rgba(58, 122, 180, 0.2)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
     ctx.shadowBlur = height * 0.5;
     ctx.shadowOffsetY = height * 0.18;
     fillRoundRect(ctx, drawX, y - height / 2, width, height, radius, bg);

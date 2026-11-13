@@ -32,9 +32,9 @@ export function renderStoryBubble(ctx, theme, x, y, w, h, options = {}) {
     ctx.lineTo(tx + tw / 2, y - th);
     ctx.lineTo(tx + tw, y + sz(3));
     ctx.closePath();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#0a1626';
     ctx.fill();
-    ctx.strokeStyle = '#bfe4f8';
+    ctx.strokeStyle = 'rgba(94, 231, 255, 0.6)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(tx, y + sz(3));
@@ -45,12 +45,12 @@ export function renderStoryBubble(ctx, theme, x, y, w, h, options = {}) {
   }
 
   ctx.save();
-  ctx.shadowColor = 'rgba(80, 130, 180, 0.24)';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
   ctx.shadowBlur = sz(24);
   ctx.shadowOffsetY = sz(10);
-  fillRoundRectGradient(ctx, x, y, w, h, sz(22), '#ffffff', '#eef8ff');
+  fillRoundRectGradient(ctx, x, y, w, h, sz(22), '#0a1626', '#0e2138');
   ctx.restore();
-  drawTopSheen(ctx, x, y, w, h, sz(22), 0.3);
+  drawTopSheen(ctx, x, y, w, h, sz(22), 0.12);
   fillRoundRect(
     ctx,
     x + sz(16),
@@ -58,16 +58,16 @@ export function renderStoryBubble(ctx, theme, x, y, w, h, options = {}) {
     w - sz(32),
     sz(2),
     sz(1),
-    hexToRgba(theme.primary, 0.16)
+    hexToRgba(theme.primary, 0.35)
   );
-  strokeRoundRect(ctx, x, y, w, h, sz(22), '#bfe4f8', 1.5);
+  strokeRoundRect(ctx, x, y, w, h, sz(22), 'rgba(94, 231, 255, 0.55)', 1.5);
 
   if (showName && speaker) {
     drawPill(ctx, speaker, x + sz(16), y + sz(21), {
       fontStr: font(sz(9), '800'),
-      color: '#ffffff',
-      bg: '#ff8a3d',
-      border: 'rgba(255,255,255,0.4)',
+      color: '#d9f8ff',
+      bg: '#0d3a55',
+      border: 'rgba(94,231,255,0.7)',
       height: sz(19),
       padX: sz(9),
     });

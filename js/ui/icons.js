@@ -12,15 +12,27 @@ import { hexToRgba, roundRectPath } from './draw.js';
  */
 
 const TILE = {
-  gold: ['#fff7d6', '#ffd76a'],
-  blue: ['#eaf8ff', '#a9dcff'],
-  sky: ['#f2fcff', '#c9edff'],
-  green: ['#eeffe8', '#b6f0a4'],
-  purple: ['#f7efff', '#d8c0ff'],
-  red: ['#fff0ef', '#ffb9b0'],
-  slate: ['#f5f9fd', '#d8e4f0'],
-  pink: ['#fff0f8', '#ffc3e2'],
-  orange: ['#fff6e6', '#ffcf87'],
+  gold: ['#211806', '#352708'],
+  blue: ['#071a2c', '#0b2942'],
+  sky: ['#081c28', '#0b2b3a'],
+  green: ['#0a2417', '#103a24'],
+  purple: ['#1a1230', '#2a1a48'],
+  red: ['#2a1013', '#3d181c'],
+  slate: ['#0d1824', '#152838'],
+  pink: ['#2a1220', '#3d1a2c'],
+  orange: ['#2a1c0b', '#3d2a10'],
+};
+
+const TILE_EDGE = {
+  gold: 'rgba(255, 207, 106, 0.5)',
+  blue: 'rgba(94, 231, 255, 0.45)',
+  sky: 'rgba(94, 231, 255, 0.4)',
+  green: 'rgba(93, 242, 160, 0.45)',
+  purple: 'rgba(201, 166, 255, 0.45)',
+  red: 'rgba(255, 138, 138, 0.45)',
+  slate: 'rgba(127, 166, 201, 0.4)',
+  pink: 'rgba(255, 168, 212, 0.45)',
+  orange: 'rgba(255, 207, 106, 0.45)',
 };
 
 const ICON_TILE = {
@@ -1249,12 +1261,13 @@ export function drawIcon(ctx, name, cx, cy, size, options = {}) {
 export function drawIconTile(ctx, name, x, y, w, h, options = {}) {
   const radius = options.radius !== undefined ? options.radius : Math.min(w, h) * 0.26;
   const tile = options.tile || iconTileColors(name);
+  const edge = options.edge || TILE_EDGE[ICON_TILE[name] || 'blue'] || TILE_EDGE.blue;
   const shadow = options.shadow !== false;
   ctx.save();
   if (shadow) {
-    ctx.shadowColor = 'rgba(58, 122, 180, 0.22)';
-    ctx.shadowBlur = Math.max(4, h * 0.14);
-    ctx.shadowOffsetY = Math.max(1, h * 0.05);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = Math.max(4, h * 0.16);
+    ctx.shadowOffsetY = Math.max(1, h * 0.06);
   }
   const gradient = ctx.createLinearGradient(x, y, x, y + h);
   gradient.addColorStop(0, tile[0]);
@@ -1268,16 +1281,18 @@ export function drawIconTile(ctx, name, x, y, w, h, options = {}) {
   path(ctx, () => roundRectPath(ctx, x, y, w, h, radius));
   ctx.clip();
   const sheen = ctx.createLinearGradient(x, y, x, y + h * 0.55);
-  sheen.addColorStop(0, 'rgba(255,255,255,0.7)');
-  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  sheen.addColorStop(0, 'rgba(190, 240, 255, 0.18)');
+  sheen.addColorStop(1, 'rgba(190, 240, 255, 0)');
   ctx.fillStyle = sheen;
   ctx.fillRect(x, y, w, h * 0.55);
   ctx.restore();
 
   ctx.save();
+  ctx.shadowColor = edge;
+  ctx.shadowBlur = Math.max(2, h * 0.12);
   path(ctx, () => roundRectPath(ctx, x, y, w, h, radius));
-  ctx.strokeStyle = hexToRgba('#ffffff', 0.95);
-  ctx.lineWidth = Math.max(1.5, h * 0.045);
+  ctx.strokeStyle = edge;
+  ctx.lineWidth = Math.max(1.2, h * 0.035);
   ctx.stroke();
   ctx.restore();
 

@@ -6,11 +6,13 @@ import {
   drawCandyPanel,
   drawProgressBar,
   drawText,
+  fillCircle,
   fillRoundRect,
   font,
   hexToRgba,
   pointInRect,
   roundRectPath,
+  strokeRoundRect,
 } from './draw.js';
 
 const PLACEMENT_LABEL = {
@@ -154,17 +156,17 @@ export default class MockAdOverlay {
     const { x, y, w, h } = this.panel;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(18, 52, 92, 0.58)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     drawCandyPanel(ctx, x, y, w, h, sz(26), {
-      fill: '#ffffff',
-      fillBottom: '#eefbff',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(20, 60, 110, 0.34)',
+      fill: '#0a1626',
+      fillBottom: '#0e2138',
+      border: 'rgba(94, 231, 255, 0.5)',
+      shadowColor: 'rgba(0, 0, 0, 0.65)',
       shadowBlur: sz(30),
       shadowOffsetY: sz(12),
-      glossAlpha: 0.5,
+      glossAlpha: 0.12,
     });
 
     drawText(
@@ -174,7 +176,7 @@ export default class MockAdOverlay {
       y + sz(28),
       {
         font: font(sz(17), '800'),
-        color: '#1f4e9c',
+        color: '#e8f7ff',
         align: 'center',
         baseline: 'middle',
       }
@@ -186,23 +188,24 @@ export default class MockAdOverlay {
     const adW = w - sz(44);
     const adH = sz(158);
     const gradient = ctx.createLinearGradient(adX, adY, adX, adY + adH);
-    gradient.addColorStop(0, '#8fd8ff');
-    gradient.addColorStop(1, '#2f8ce8');
+    gradient.addColorStop(0, '#0b2036');
+    gradient.addColorStop(1, '#155b8f');
     fillRoundRect(ctx, adX, adY, adW, adH, sz(20), gradient);
     ctx.save();
     roundRectPath(ctx, adX, adY, adW, adH, sz(20));
     ctx.clip();
     const gloss = ctx.createLinearGradient(0, adY, 0, adY + adH * 0.6);
-    gloss.addColorStop(0, 'rgba(255,255,255,0.35)');
-    gloss.addColorStop(1, 'rgba(255,255,255,0)');
+    gloss.addColorStop(0, 'rgba(180, 240, 255, 0.2)');
+    gloss.addColorStop(1, 'rgba(180, 240, 255, 0)');
     ctx.fillStyle = gloss;
     ctx.fillRect(adX, adY, adW, adH * 0.6);
     ctx.restore();
+    strokeRoundRect(ctx, adX, adY, adW, adH, sz(20), 'rgba(94,231,255,0.45)', 1.5);
 
     drawIcon(ctx, 'tv', adX + adW / 2, adY + adH * 0.36, sz(58));
     drawText(ctx, '广告位占位', adX + adW / 2, adY + adH * 0.65, {
       font: font(sz(17), '800'),
-      color: '#ffffff',
+      color: '#eaffff',
       align: 'center',
       baseline: 'middle',
     });
@@ -213,7 +216,7 @@ export default class MockAdOverlay {
       adY + adH * 0.82,
       {
         font: font(sz(11), '500'),
-        color: 'rgba(255,255,255,0.9)',
+        color: 'rgba(200, 240, 255, 0.85)',
         align: 'center',
         baseline: 'middle',
       }
@@ -227,8 +230,8 @@ export default class MockAdOverlay {
       this.progressRect.w,
       this.progressRect.h,
       progress,
-      '#e2f2fd',
-      this.completed ? '#35b84a' : '#3a97f7'
+      '#12304a',
+      this.completed ? '#5df2a0' : '#5ee7ff'
     );
 
     const status = this.completed
@@ -238,7 +241,7 @@ export default class MockAdOverlay {
       : '广告播放中… 完整观看后才能领取';
     drawText(ctx, status, x + w / 2, y + sz(246), {
       font: font(sz(12), '600'),
-      color: this.completed ? '#2a8f3a' : '#7fa3c6',
+      color: this.completed ? '#6ef2a0' : '#7fa6c9',
       align: 'center',
       baseline: 'middle',
     });
@@ -252,50 +255,69 @@ export default class MockAdOverlay {
       : '播放中…';
     const rect = this.actionRect;
     const radius = rect.h / 2;
+    const edge = this.completed ? '#5df2a0' : '#5a7f9e';
 
     ctx.save();
-    ctx.shadowColor = this.completed ? 'rgba(47, 184, 62, 0.4)' : 'rgba(120, 150, 180, 0.2)';
+    ctx.shadowColor = this.completed
+      ? 'rgba(93, 242, 160, 0.4)'
+      : 'rgba(0, 0, 0, 0.4)';
     ctx.shadowBlur = sz(14);
     ctx.shadowOffsetY = sz(5);
     roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, radius);
-    ctx.fillStyle = this.completed ? '#43c94f' : '#dfeaf4';
+    ctx.fillStyle = this.completed ? '#1c6b3c' : '#0b1420';
     ctx.fill();
     ctx.restore();
 
-    roundRectPath(ctx, rect.x, rect.y, rect.w, rect.h, radius);
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fill();
-    roundRectPath(ctx, rect.x + sz(2.5), rect.y + sz(2.5), rect.w - sz(5), rect.h - sz(5), radius - sz(2));
+    roundRectPath(ctx, rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2, radius - 1);
     const body = ctx.createLinearGradient(0, rect.y, 0, rect.y + rect.h);
     if (this.completed) {
-      body.addColorStop(0, '#9ceb74');
-      body.addColorStop(0.55, '#4bcd55');
-      body.addColorStop(1, '#2eb43d');
+      body.addColorStop(0, '#0f2f22');
+      body.addColorStop(0.55, '#1c6b3c');
+      body.addColorStop(1, '#2e9d54');
     } else {
-      body.addColorStop(0, '#eef6fc');
-      body.addColorStop(1, '#d5e6f4');
+      body.addColorStop(0, '#0b1420');
+      body.addColorStop(1, '#111d2c');
     }
     ctx.fillStyle = body;
     ctx.fill();
+    roundRectPath(ctx, rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2, radius - 1);
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = 2;
+    ctx.stroke();
     drawText(ctx, actionText, rect.x + rect.w / 2, rect.y + rect.h / 2, {
       font: font(sz(15), '800'),
-      color: this.completed ? '#ffffff' : '#8aa6c0',
+      color: this.completed ? '#f2fff7' : '#7fa6c9',
       align: 'center',
       baseline: 'middle',
     });
 
     // 关闭按钮
-    drawIcon(
-      ctx,
-      'close',
-      this.closeRect.x + this.closeRect.w / 2,
-      this.closeRect.y + this.closeRect.h / 2,
-      this.closeRect.w
-    );
+    const closeCx = this.closeRect.x + this.closeRect.w / 2;
+    const closeCy = this.closeRect.y + this.closeRect.h / 2;
+    const closeR = this.closeRect.w / 2;
+    ctx.save();
+    ctx.shadowColor = 'rgba(94, 231, 255, 0.4)';
+    ctx.shadowBlur = sz(12);
+    fillCircle(ctx, closeCx, closeCy, closeR, '#07111d');
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(closeCx, closeCy, closeR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(94, 231, 255, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = '#9ff4ff';
+    ctx.lineWidth = sz(2.2);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(closeCx - closeR * 0.38, closeCy - closeR * 0.38);
+    ctx.lineTo(closeCx + closeR * 0.38, closeCy + closeR * 0.38);
+    ctx.moveTo(closeCx + closeR * 0.38, closeCy - closeR * 0.38);
+    ctx.lineTo(closeCx - closeR * 0.38, closeCy + closeR * 0.38);
+    ctx.stroke();
 
     drawText(ctx, '这是开发阶段模拟广告，不会产生真实收益', x + w / 2, y + h - sz(16), {
       font: font(sz(9.5), '400'),
-      color: hexToRgba('#7fa3c6', 0.9),
+      color: 'rgba(127, 166, 201, 0.75)',
       align: 'center',
       baseline: 'middle',
     });

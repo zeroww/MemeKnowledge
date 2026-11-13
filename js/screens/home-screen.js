@@ -1,19 +1,22 @@
 import { LEVELS, STORY_ASSETS } from '../data/levels.js';
-import { RIGHT_SAFE_X, SCREEN_HEIGHT, SCREEN_WIDTH, sz } from '../render.js';
-import { drawImageContain, loadImage } from '../services/assets.js';
+import { SCREEN_HEIGHT, SCREEN_WIDTH, sz } from '../render.js';
+import { drawImageContain, drawImageCover, loadImage } from '../services/assets.js';
 import { drawBadgeButton, drawCoinPill } from '../ui/badges.js';
 import Button from '../ui/button.js';
 import { renderCampusScene } from '../ui/campus-scene.js';
-import { drawText, font } from '../ui/draw.js';
+import { font } from '../ui/draw.js';
 import BaseScreen from './base-screen.js';
 
+const HOME_BACKGROUND = 'assets/ui/home-bg.jpg';
+
 /**
- * 启动首页：卡通校园场景 + 顶部圆形功能按钮 + 三枚糖果胶囊按钮。
- * 对齐参考图：主按钮绿色、次按钮蓝色、第三按钮橙色。
+ * 启动首页：使用「不接梗就淘汰」竞技场背景图，中央玩家形象已合成在图中。
+ * UI 只保留底部品牌、功能徽章与三枚糖果胶囊按钮，避免遮挡主视觉。
  */
 export default class HomeScreen extends BaseScreen {
   constructor(app) {
     super(app);
+    this.backgroundImage = null;
     this.heroImages = [];
     this.storyButton = null;
     this.resumeButton = null;
@@ -23,6 +26,7 @@ export default class HomeScreen extends BaseScreen {
   }
 
   onEnter() {
+    this.backgroundImage = loadImage(HOME_BACKGROUND);
     this.heroImages = (STORY_ASSETS.heroes || []).map((src) => loadImage(src));
     this.layout();
     this.app.analytics.track('home_view', {
@@ -39,29 +43,6 @@ export default class HomeScreen extends BaseScreen {
     const w = this.contentW - sz(36);
     const top = this.top + sz(6);
     const compact = SCREEN_HEIGHT < 700;
-
-    const badgeSize = compact ? sz(32) : sz(36);
-    const badgeGap = sz(9);
-    const badgeCy = top + badgeSize / 2 + sz(2);
-    const badgeRight = Math.min(RIGHT_SAFE_X, x + w) - badgeSize / 2;
-    const badgeDefs = [
-      { kind: 'trophy', onClick: () => this.app.showScreen('leaderboard') },
-      { kind: 'cart', onClick: () => this.app.showScreen('shop') },
-      { kind: 'gear', onClick: () => this.app.showScreen('settings') },
-    ];
-    this.badges = badgeDefs.map((def, index) => ({
-      ...def,
-      cx: badgeRight - (badgeDefs.length - 1 - index) * (badgeSize + badgeGap),
-      cy: badgeCy,
-      r: badgeSize / 2,
-    }));
-
-    this.coinPill = {
-      x,
-      y: badgeCy - sz(14),
-      w: sz(78),
-      h: sz(28),
-    };
 
     const mainH = compact ? sz(52) : sz(58);
     const secondH = compact ? sz(44) : sz(48);
@@ -110,12 +91,39 @@ export default class HomeScreen extends BaseScreen {
       onClick: () => this.app.showScreen('collection'),
     });
 
-    const heroH = compact ? sz(156) : sz(186);
+    // 品牌行：标题居中，梗币在左，功能徽章在右
+    const brandTitleSize = compact ? sz(22) : sz(26);
+    const brandTop = stackTop - sz(compact ? 56 : 76);
+    const brandCenterY = brandTop + brandTitleSize / 2;
+
+    const badgeSize = compact ? sz(26) : sz(30);
+    const badgeGap = sz(7);
+    const badgeRight = x + w - badgeSize / 2;
+    const badgeDefs = [
+      { kind: 'trophy', onClick: () => this.app.showScreen('leaderboard') },
+      { kind: 'cart', onClick: () => this.app.showScreen('shop') },
+      { kind: 'gear', onClick: () => this.app.showScreen('settings') },
+    ];
+    this.badges = badgeDefs.map((def, index) => ({
+      ...def,
+      cx: badgeRight - (badgeDefs.length - 1 - index) * (badgeSize + badgeGap),
+      cy: brandCenterY,
+      r: badgeSize / 2,
+    }));
+
+    this.coinPill = {
+      x,
+      y: this.badges[0].cy - sz(13),
+      w: compact ? sz(68) : sz(74),
+      h: sz(26),
+    };
+
+    // 兼容冒烟测试：主视觉中玩家角色所在的逻辑区域
     const heroRect = {
-      x: x + w - heroH * 0.42 + sz(4),
-      y: stackTop - heroH + sz(12),
-      w: heroH * 0.42,
-      h: heroH,
+      x: (SCREEN_WIDTH - sz(64)) / 2,
+      y: sz(188),
+      w: sz(64),
+      h: sz(176),
     };
 
     this.buttons = [this.storyButton, this.resumeButton, this.collectionButton];
@@ -128,7 +136,8 @@ export default class HomeScreen extends BaseScreen {
       stackTop,
       stackBottom,
       heroRect,
-      titleY: top + sz(38),
+      brandTop,
+      brandTitleSize,
       // 兼容旧布局测试
       mainY: stackTop,
       mainH,
@@ -150,53 +159,74 @@ export default class HomeScreen extends BaseScreen {
 
   render(ctx) {
     const theme = this.theme;
-    const { x, w, top, compact, heroRect, stackTop } = this.layoutInfo;
+    const { x, w, compact, stackTop, brandTop, brandTitleSize } = this.layoutInfo;
+    const imageDrawn = drawImageCover(
+      ctx,
+      this.backgroundImage,
+      0,
+      0,
+      SCREEN_WIDTH,
+      SCREEN_HEIGHT,
+      0
+    );
 
-    renderCampusScene(ctx, SCREEN_WIDTH, SCREEN_HEIGHT, this.time);
-
-    // 底部轻微提亮，保证按钮区域干净
-    const scrim = ctx.createLinearGradient(0, stackTop - sz(26), 0, SCREEN_HEIGHT);
-    scrim.addColorStop(0, 'rgba(255,255,255,0)');
-    scrim.addColorStop(0.35, 'rgba(255,255,255,0.28)');
-    scrim.addColorStop(1, 'rgba(255,255,255,0.55)');
-    ctx.fillStyle = scrim;
-    ctx.fillRect(0, stackTop - sz(26), SCREEN_WIDTH, SCREEN_HEIGHT - stackTop + sz(26));
-
-    // 主角站在按钮上方
-    const heroCx = heroRect.x + heroRect.w / 2;
-    const heroFeet = heroRect.y + heroRect.h;
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.beginPath();
-    if (ctx.ellipse) {
-      ctx.ellipse(heroCx, heroFeet - sz(2), heroRect.w * 0.5, sz(7), 0, 0, Math.PI * 2);
-    } else {
-      ctx.arc(heroCx, heroFeet - sz(2), heroRect.w * 0.42, 0, Math.PI * 2);
-    }
-    ctx.fillStyle = '#2c5f3a';
-    ctx.fill();
-    ctx.restore();
-
-    if (
-      !drawImageContain(
+    if (!imageDrawn) {
+      // 素材未就绪时退回卡通校园场景，避免白屏
+      renderCampusScene(ctx, SCREEN_WIDTH, SCREEN_HEIGHT, this.time);
+      drawImageContain(
         ctx,
         this.heroImages[0],
-        heroRect.x,
-        heroRect.y,
-        heroRect.w,
-        heroRect.h,
+        this.layoutInfo.heroRect.x,
+        this.layoutInfo.heroRect.y,
+        this.layoutInfo.heroRect.w,
+        this.layoutInfo.heroRect.h,
         0
-      )
-    ) {
-      drawText(ctx, '你', heroRect.x + heroRect.w / 2, heroRect.y + heroRect.h / 2, {
-        font: font(sz(14), '900'),
-        color: 'rgba(255,255,255,0.75)',
-        align: 'center',
-        baseline: 'middle',
-      });
+      );
     }
 
-    // 右上角圆形功能按钮
+    // 底部压暗，保证品牌与按钮在复杂背景上可读
+    const scrim = ctx.createLinearGradient(0, stackTop - sz(96), 0, SCREEN_HEIGHT);
+    scrim.addColorStop(0, 'rgba(4, 9, 20, 0)');
+    scrim.addColorStop(0.55, 'rgba(4, 9, 20, 0.3)');
+    scrim.addColorStop(1, 'rgba(4, 9, 20, 0.62)');
+    ctx.fillStyle = scrim;
+    ctx.fillRect(0, stackTop - sz(96), SCREEN_WIDTH, SCREEN_HEIGHT - stackTop + sz(96));
+
+    // 品牌标题
+    const title = '梗世界';
+    const titleY = brandTop + brandTitleSize / 2;
+    ctx.save();
+    ctx.font = font(brandTitleSize, '900');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = sz(8);
+    ctx.shadowOffsetY = sz(2);
+    ctx.strokeStyle = '#0d2748';
+    ctx.lineWidth = sz(4.5);
+    ctx.strokeText(title, x + w / 2, titleY);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(title, x + w / 2, titleY);
+    ctx.restore();
+
+    // 副标题 / 全通关提示
+    const openLevels = LEVELS.filter((level) => level.available);
+    const allCleared =
+      openLevels.length > 0 &&
+      openLevels.every((level) => this.app.databus.isLevelCompleted(level.id));
+    const subText = allCleared ? '全部通关 · 梗王归位' : '接住梗，活下去';
+    ctx.save();
+    ctx.font = font(sz(compact ? 9 : 10), '700');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = sz(4);
+    ctx.fillStyle = allCleared ? '#ffe6a1' : '#bfeeff';
+    ctx.fillText(subText, x + w / 2, brandTop + brandTitleSize + sz(compact ? 5 : 7));
+    ctx.restore();
+
+    // 底部功能徽章
     this.badges.forEach((badge) => {
       drawBadgeButton(
         ctx,
@@ -208,65 +238,16 @@ export default class HomeScreen extends BaseScreen {
       );
     });
 
-    // 左上角梗币
+    // 梗币胶囊
     drawCoinPill(
       ctx,
       this.coinPill.x,
       this.coinPill.y,
       this.coinPill.w,
       this.coinPill.h,
-      this.profile.coins
+      this.profile.coins,
+      { dark: true }
     );
-
-    // 标题
-    const titleSize = compact ? sz(34) : sz(38);
-    const titleY = this.layoutInfo.titleY;
-    ctx.save();
-    ctx.font = font(titleSize, '900');
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.lineJoin = 'round';
-    ctx.shadowColor = 'rgba(23, 74, 140, 0.28)';
-    ctx.shadowBlur = sz(10);
-    ctx.shadowOffsetY = sz(3);
-    ctx.strokeStyle = '#1f5fae';
-    ctx.lineWidth = sz(5);
-    ctx.strokeText('梗世界', x, titleY);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText('梗世界', x, titleY);
-    ctx.restore();
-
-    // 副标题胶囊
-    const openLevels = LEVELS.filter((level) => level.available);
-    const allCleared =
-      openLevels.length > 0 &&
-      openLevels.every((level) => this.app.databus.isLevelCompleted(level.id));
-    const subText = allCleared ? '全部通关 · 梗王归位' : '接住梗，活下去';
-    ctx.font = font(sz(12), '800');
-    const subW = ctx.measureText(subText).width + sz(22);
-    const subH = sz(24);
-    const subY = titleY + titleSize + sz(10);
-    ctx.save();
-    ctx.shadowColor = 'rgba(31, 94, 174, 0.22)';
-    ctx.shadowBlur = sz(8);
-    ctx.shadowOffsetY = sz(3);
-    ctx.fillStyle = 'rgba(255,255,255,0.94)';
-    const r = subH / 2;
-    ctx.beginPath();
-    ctx.moveTo(x + r, subY);
-    ctx.arcTo(x + subW, subY, x + subW, subY + subH, r);
-    ctx.arcTo(x + subW, subY + subH, x, subY + subH, r);
-    ctx.arcTo(x, subY + subH, x, subY, r);
-    ctx.arcTo(x, subY, x + subW, subY, r);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-    drawText(ctx, subText, x + subW / 2, subY + subH / 2 + 0.5, {
-      font: font(sz(12), '800'),
-      color: '#2b6fd6',
-      align: 'center',
-      baseline: 'middle',
-    });
 
     this.storyButton.render(ctx, theme);
     this.resumeButton.render(ctx, theme);

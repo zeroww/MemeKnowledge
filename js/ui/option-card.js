@@ -12,23 +12,53 @@ import {
 } from './draw.js';
 
 /**
- * 选项卡：参考图的彩色胶囊（A 蓝 / B 绿 / C 橙 / D 紫 / T 浅蓝 / F 粉）。
- * 白色字母徽章 + 果冻高光 + 白色外壳，和按钮保持同一套视觉语言。
+ * 选项卡：深色霓虹胶囊。
+ * A 青蓝 / B 绿 / C 琥珀 / D 紫 / T 浅青 / F 粉。
  */
 const OPTION_STYLES = {
-  A: { stops: ['#8fd8ff', '#3a97f7', '#1f74dd'], edge: '#1a63c4', text: '#ffffff' },
-  B: { stops: ['#a6ec7e', '#4bcd55', '#2eb43d'], edge: '#279a3a', text: '#ffffff' },
-  C: { stops: ['#ffd47a', '#ffa62b', '#ff8a12'], edge: '#e97a08', text: '#ffffff' },
-  D: { stops: ['#ddc6ff', '#a97cf2', '#8154de'], edge: '#7045c9', text: '#ffffff' },
-  T: { stops: ['#eefaff', '#b8e4ff'], edge: '#8ac4e8', text: '#2f8ce8', light: true },
-  F: { stops: ['#fff0f6', '#ffc3dd'], edge: '#f0a0c0', text: '#e8568f', light: true },
+  A: {
+    body: ['#08131f', '#0a2233', '#0d3a55'],
+    edge: '#5ee7ff',
+    glow: 'rgba(94, 231, 255, 0.34)',
+    text: '#ecfdff',
+  },
+  B: {
+    body: ['#0a1a12', '#0d2a1c', '#1c6b3c'],
+    edge: '#5df2a0',
+    glow: 'rgba(93, 242, 160, 0.34)',
+    text: '#f2fff7',
+  },
+  C: {
+    body: ['#1a1306', '#2a1e08', '#8a6a12'],
+    edge: '#ffe08a',
+    glow: 'rgba(255, 224, 138, 0.34)',
+    text: '#fff9e6',
+  },
+  D: {
+    body: ['#120c22', '#1e1338', '#5a2f9e'],
+    edge: '#c9a6ff',
+    glow: 'rgba(169, 124, 255, 0.34)',
+    text: '#f8f2ff',
+  },
+  T: {
+    body: ['#0a1b24', '#0e2a38', '#10465c'],
+    edge: '#5ee7ff',
+    glow: 'rgba(94, 231, 255, 0.26)',
+    text: '#9ff4ff',
+  },
+  F: {
+    body: ['#2b1220', '#3a1628', '#5a2240'],
+    edge: '#ffa8d4',
+    glow: 'rgba(255, 122, 184, 0.26)',
+    text: '#ffd0e8',
+  },
 };
 
 const FALLBACK = [
-  { stops: ['#8fd8ff', '#3a97f7', '#1f74dd'], edge: '#1a63c4', text: '#ffffff' },
-  { stops: ['#a6ec7e', '#4bcd55', '#2eb43d'], edge: '#279a3a', text: '#ffffff' },
-  { stops: ['#ffd47a', '#ffa62b', '#ff8a12'], edge: '#e97a08', text: '#ffffff' },
-  { stops: ['#ddc6ff', '#a97cf2', '#8154de'], edge: '#7045c9', text: '#ffffff' },
+  OPTION_STYLES.A,
+  OPTION_STYLES.B,
+  OPTION_STYLES.C,
+  OPTION_STYLES.D,
 ];
 
 export default class OptionCard {
@@ -103,12 +133,10 @@ export default class OptionCard {
     const isWrong = this.state === 'wrong';
     const isMuted = this.state === 'muted';
     const base = this.style();
-    const light = !!base.light;
     const radius = this.h / 2;
-    const rim = clamp(this.h * 0.07, 1.8, 3.4);
 
     ctx.save();
-    ctx.globalAlpha = isMuted ? 0.34 : 1;
+    ctx.globalAlpha = isMuted ? 0.36 : 1;
 
     if (this.pressed) {
       const cx = this.x + this.w / 2;
@@ -118,80 +146,71 @@ export default class OptionCard {
       ctx.translate(-cx, -cy);
     }
 
-    // 投影
-    ctx.save();
-    ctx.shadowColor = isCorrect
-      ? 'rgba(53, 184, 74, 0.45)'
+    const ringColor = isCorrect ? '#4ade80' : isWrong ? '#ff5c5c' : base.edge;
+    const glowColor = isCorrect
+      ? 'rgba(74, 222, 128, 0.55)'
       : isWrong
-        ? 'rgba(242, 84, 75, 0.45)'
-        : hexToRgba(base.edge, 0.3);
-    ctx.shadowBlur = this.pressed ? this.h * 0.12 : this.h * 0.34;
-    ctx.shadowOffsetY = this.pressed ? this.h * 0.04 : this.h * 0.12;
+        ? 'rgba(255, 92, 92, 0.55)'
+        : base.glow;
+
+    // 外发光
+    ctx.save();
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = this.h * 0.38;
+    ctx.shadowOffsetY = this.h * 0.08;
     roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
-    ctx.fillStyle = base.stops[1];
+    ctx.fillStyle = base.body[1];
     ctx.fill();
     ctx.restore();
 
-    // 白色外壳
-    const shell = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
-    shell.addColorStop(0, '#ffffff');
-    shell.addColorStop(1, light ? '#effaff' : hexToRgba(base.stops[0], 0.9));
-    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
-    ctx.fillStyle = shell;
-    ctx.fill();
-
     // 主体
-    const innerX = this.x + rim;
-    const innerY = this.y + rim;
-    const innerW = this.w - rim * 2;
-    const innerH = this.h - rim * 2;
-    const body = ctx.createLinearGradient(0, innerY, 0, innerY + innerH);
-    body.addColorStop(0, base.stops[0]);
-    if (light) {
-      body.addColorStop(1, base.stops[1]);
-    } else {
-      body.addColorStop(0.55, base.stops[1]);
-      body.addColorStop(1, base.stops[2]);
-    }
-    roundRectPath(ctx, innerX, innerY, innerW, innerH, Math.max(1, radius - rim));
+    const body = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
+    body.addColorStop(0, base.body[0]);
+    body.addColorStop(0.62, base.body[1]);
+    body.addColorStop(1, base.body[2]);
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
     ctx.fillStyle = body;
     ctx.fill();
 
-    // 果冻高光
+    // 底部暗边
     ctx.save();
-    roundRectPath(ctx, innerX, innerY, innerW, innerH, Math.max(1, radius - rim));
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
     ctx.clip();
-    const gloss = ctx.createLinearGradient(0, innerY, 0, innerY + innerH * 0.62);
-    gloss.addColorStop(0, 'rgba(255,255,255,0.5)');
-    gloss.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = gloss;
-    ctx.fillRect(innerX, innerY, innerW, innerH * 0.62);
+    const shade = ctx.createLinearGradient(0, this.y + this.h * 0.55, 0, this.y + this.h);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(this.x, this.y + this.h * 0.5, this.w, this.h * 0.5);
+    ctx.restore();
 
-    const shineW = Math.max(2, innerW * 0.26);
-    const shineH = Math.max(1.5, innerH * 0.2);
+    // 顶部冷光
     ctx.save();
-    ctx.translate(innerX + innerW * 0.24, innerY + innerH * 0.28);
-    ctx.scale(shineW, shineH);
-    const shine = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-    shine.addColorStop(0, 'rgba(255,255,255,0.75)');
-    shine.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = shine;
-    ctx.beginPath();
-    ctx.arc(0, 0, 1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
+    ctx.clip();
+    const gloss = ctx.createLinearGradient(0, this.y, 0, this.y + this.h * 0.55);
+    gloss.addColorStop(0, 'rgba(210, 245, 255, 0.14)');
+    gloss.addColorStop(1, 'rgba(210, 245, 255, 0)');
+    ctx.fillStyle = gloss;
+    ctx.fillRect(this.x, this.y, this.w, this.h * 0.55);
     ctx.restore();
 
-    // 状态描边
-    if (isCorrect || isWrong) {
-      const ringColor = isCorrect ? '#2fae44' : '#e8453a';
-      roundRectPath(ctx, this.x, this.y, this.w, this.h, radius);
-      ctx.strokeStyle = ringColor;
-      ctx.lineWidth = Math.max(2.5, this.h * 0.09);
-      ctx.stroke();
-    }
+    // 霓虹描边
+    ctx.save();
+    ctx.shadowColor = ringColor;
+    ctx.shadowBlur = this.h * 0.3;
+    roundRectPath(ctx, this.x + 1, this.y + 1, this.w - 2, this.h - 2, radius - 1);
+    ctx.strokeStyle = ringColor;
+    ctx.lineWidth = isCorrect || isWrong ? 3 : 2;
+    ctx.stroke();
+    ctx.restore();
 
-    // 字母徽章
+    // 内侧细线
+    roundRectPath(ctx, this.x + 5, this.y + 5, this.w - 10, this.h - 10, Math.max(1, radius - 5));
+    ctx.strokeStyle = hexToRgba(ringColor, 0.22);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 字母槽
     const padX = sz(9);
     const badgeSize = Math.min(this.h - sz(10), sz(34));
     const badgeX = this.x + padX + badgeSize / 2;
@@ -199,14 +218,14 @@ export default class OptionCard {
     ctx.save();
     ctx.beginPath();
     ctx.arc(badgeX, badgeY, badgeSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = light ? hexToRgba(base.text, 0.14) : 'rgba(255,255,255,0.26)';
+    ctx.fillStyle = 'rgba(3, 9, 17, 0.62)';
     ctx.fill();
-    ctx.strokeStyle = light ? hexToRgba(base.text, 0.28) : 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = hexToRgba(ringColor, 0.7);
+    ctx.lineWidth = 1.5;
     ctx.stroke();
     drawText(ctx, this.letter, badgeX, badgeY + 1, {
-      font: font(badgeSize * 0.56, '900'),
-      color: light ? base.text : '#ffffff',
+      font: font(badgeSize * 0.52, '900'),
+      color: isCorrect ? '#4ade80' : isWrong ? '#ff8a8a' : base.edge,
       align: 'center',
       baseline: 'middle',
     });
@@ -226,7 +245,7 @@ export default class OptionCard {
     lines.forEach((line, index) => {
       drawText(ctx, line, textX, textStartY + index * lineHeight, {
         font: font(fontSize, '800'),
-        color: light ? base.text : '#ffffff',
+        color: base.text,
         baseline: 'middle',
       });
     });
@@ -237,17 +256,24 @@ export default class OptionCard {
       const cy = this.y + this.h / 2;
       const r = Math.min(this.h * 0.32, sz(14));
       ctx.save();
-      ctx.shadowColor = isCorrect ? 'rgba(47, 174, 68, 0.4)' : 'rgba(232, 69, 58, 0.4)';
-      ctx.shadowBlur = sz(8);
+      ctx.shadowColor = isCorrect
+        ? 'rgba(74, 222, 128, 0.6)'
+        : 'rgba(255, 92, 92, 0.6)';
+      ctx.shadowBlur = sz(10);
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fillStyle = isCorrect ? '#2fae44' : '#e8453a';
+      ctx.fillStyle = isCorrect ? '#1c8a45' : '#8a2027';
       ctx.fill();
       ctx.restore();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r - 1.5, 0, Math.PI * 2);
+      ctx.strokeStyle = isCorrect ? '#6ef2a0' : '#ff9a9a';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
       if (isCorrect) {
-        drawCheckMark(ctx, cx, cy, r * 1.35, '#ffffff', Math.max(2, r * 0.34));
+        drawCheckMark(ctx, cx, cy, r * 1.35, '#eafff2', Math.max(2, r * 0.32));
       } else {
-        drawCrossMark(ctx, cx, cy, r * 1.25, '#ffffff', Math.max(2, r * 0.3));
+        drawCrossMark(ctx, cx, cy, r * 1.2, '#fff0f0', Math.max(2, r * 0.28));
       }
     }
 

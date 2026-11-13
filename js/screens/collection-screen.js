@@ -184,12 +184,16 @@ export default class CollectionScreen extends BaseScreen {
     drawGlassPanel(ctx, screenX, screenY, w, h, sz(13), theme, unlocked ? 0.9 : 0.6, unlocked ? 0.8 : 0.4);
 
     const rarityColor =
-      question.difficulty === 3 ? '#f2544b' : question.difficulty === 2 ? '#ff9f2e' : '#3a97f7';
+      question.difficulty === 3
+        ? { bg: 'rgba(255, 92, 92, 0.14)', edge: 'rgba(255, 138, 138, 0.5)', text: '#ffb0b0' }
+        : question.difficulty === 2
+          ? { bg: 'rgba(255, 207, 106, 0.12)', edge: 'rgba(255, 224, 138, 0.5)', text: '#ffe08a' }
+          : { bg: 'rgba(94, 231, 255, 0.12)', edge: 'rgba(94, 231, 255, 0.45)', text: '#9ff4ff' };
     drawPill(ctx, DIFFICULTY_LABEL[question.difficulty], screenX + sz(10), screenY + sz(14), {
       fontStr: font(sz(8), '800'),
-      color: '#ffffff',
-      bg: rarityColor,
-      border: 'rgba(255,255,255,0.5)',
+      color: rarityColor.text,
+      bg: rarityColor.bg,
+      border: rarityColor.edge,
       height: sz(15),
       padX: sz(6),
     });
@@ -218,21 +222,18 @@ export default class CollectionScreen extends BaseScreen {
       drawCheckMark(ctx, screenX + w - sz(18), screenY + h - sz(15), sz(12), theme.success, sz(2.4));
     } else {
       ctx.save();
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.42;
       drawIconTile(
         ctx,
         TYPE_ICON_NAME[question.type] || 'quiz',
         screenX + w / 2 - sz(24),
-        screenY + sz(22),
+        screenY + sz(18),
         sz(48),
         sz(48),
         { iconScale: 0.56, radius: sz(16) }
       );
       ctx.restore();
-      drawIconTile(ctx, 'lock', screenX + w / 2 - sz(11), screenY + sz(48), sz(26), sz(26), {
-        iconScale: 0.6,
-        radius: sz(9),
-      });
+      drawIcon(ctx, 'lock', screenX + w - sz(18), screenY + sz(18), sz(18));
       drawText(ctx, '答对后解锁', screenX + w / 2, screenY + h - sz(14), {
         font: font(sz(9), '600'),
         color: hexToRgba(theme.muted, 0.9),

@@ -19,6 +19,7 @@ import {
   fillCircle,
   fillRoundRect,
   font,
+  roundRectPath,
   strokeCircle,
   strokeRoundRect,
 } from '../ui/draw.js';
@@ -203,9 +204,9 @@ export default class MapScreen extends BaseScreen {
       top + sz(16),
       {
         fontStr: font(sz(9), '800'),
-        color: '#2b6fd6',
-        bg: 'rgba(255,255,255,0.94)',
-        border: '#cfeafb',
+        color: '#9ff4ff',
+        bg: 'rgba(94,231,255,0.1)',
+        border: 'rgba(94,231,255,0.4)',
         height: sz(22),
         padX: sz(10),
         align: 'right',
@@ -214,16 +215,24 @@ export default class MapScreen extends BaseScreen {
 
     // 地图卡片
     drawCandyPanel(ctx, mapX, mapY, mapW, mapH, sz(22), {
-      fill: '#ffffff',
-      fillBottom: '#eaf9ff',
-      border: '#bfe4f8',
-      shadowColor: 'rgba(58, 122, 180, 0.24)',
+      fill: '#0a1626',
+      fillBottom: '#0e2138',
+      border: 'rgba(94, 231, 255, 0.45)',
+      shadowColor: 'rgba(0, 0, 0, 0.55)',
       shadowBlur: sz(24),
       shadowOffsetY: sz(9),
-      glossAlpha: 0.35,
+      glossAlpha: 0.12,
     });
     if (!drawImageContain(ctx, this.mapImage, mapX, mapY, mapW, mapH, sz(22))) {
       drawImagePlaceholder(ctx, mapX, mapY, mapW, mapH, sz(22), theme, '校园地图加载中…');
+    } else {
+      // 夜色霓虹滤镜，让白天校园地图与深色 UI 融合
+      ctx.save();
+      roundRectPath(ctx, mapX, mapY, mapW, mapH, sz(22));
+      ctx.clip();
+      ctx.fillStyle = 'rgba(4, 12, 24, 0.36)';
+      ctx.fillRect(mapX, mapY, mapW, mapH);
+      ctx.restore();
     }
     strokeRoundRect(
       ctx,
@@ -232,7 +241,7 @@ export default class MapScreen extends BaseScreen {
       mapW,
       mapH,
       sz(22),
-      'rgba(255,255,255,0.9)',
+      'rgba(94,231,255,0.55)',
       sz(1.6)
     );
 
@@ -241,18 +250,18 @@ export default class MapScreen extends BaseScreen {
       const level = node.level;
       const completed = this.app.databus.isLevelCompleted(level.id);
       const unlocked = this.isUnlocked(level) && level.available;
-      const ringColor = completed ? '#35b84a' : unlocked ? '#3a97f7' : '#9fb3c6';
+      const ringColor = completed ? '#4ade80' : unlocked ? '#5ee7ff' : '#5a7f9e';
       const icon = NODE_ICONS[level.id] || 'school';
 
       ctx.save();
       ctx.globalAlpha = level.available ? 1 : 0.72;
       ctx.save();
-      ctx.shadowColor = 'rgba(30, 80, 130, 0.35)';
-      ctx.shadowBlur = sz(10);
+      ctx.shadowColor = unlocked || completed ? ringColor : 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = sz(12);
       ctx.shadowOffsetY = sz(3);
-      fillCircle(ctx, node.cx, node.cy, sz(22), 'rgba(255,255,255,0.96)');
+      fillCircle(ctx, node.cx, node.cy, sz(22), 'rgba(7, 16, 30, 0.94)');
       ctx.restore();
-      strokeCircle(ctx, node.cx, node.cy, sz(22), ringColor, sz(3));
+      strokeCircle(ctx, node.cx, node.cy, sz(22), ringColor, sz(2.5));
       drawIcon(ctx, icon, node.cx, node.cy + sz(1), sz(30), {
         alpha: unlocked || completed ? 1 : 0.7,
       });
@@ -295,13 +304,13 @@ export default class MapScreen extends BaseScreen {
     const card = this.progressCard;
     if (card) {
       drawCandyPanel(ctx, card.x, card.y, card.w, card.h, sz(18), {
-        fill: '#ffffff',
-        fillBottom: '#f2fbff',
-        border: '#cfeafb',
-        shadowColor: 'rgba(58, 122, 180, 0.16)',
+        fill: '#0a1626',
+        fillBottom: '#0e2138',
+        border: 'rgba(94, 231, 255, 0.4)',
+        shadowColor: 'rgba(0, 0, 0, 0.5)',
         shadowBlur: sz(14),
         shadowOffsetY: sz(5),
-        glossAlpha: 0.5,
+        glossAlpha: 0.12,
       });
       drawText(ctx, '剧情进度', card.x + sz(14), card.y + sz(12), {
         font: font(sz(11), '800'),
@@ -332,10 +341,10 @@ export default class MapScreen extends BaseScreen {
         const sy = card.y + sz(36);
         const segH = Math.min(sz(34), card.h - sz(50));
         const fill = completed
-          ? 'rgba(53, 184, 74, 0.16)'
+          ? 'rgba(74, 222, 128, 0.14)'
           : unlocked
-            ? 'rgba(58, 151, 247, 0.14)'
-            : 'rgba(159, 179, 198, 0.16)';
+            ? 'rgba(94, 231, 255, 0.12)'
+            : 'rgba(90, 127, 158, 0.14)';
         fillRoundRect(ctx, sx, sy, segW, segH, sz(10), fill);
         drawIcon(
           ctx,
@@ -346,12 +355,12 @@ export default class MapScreen extends BaseScreen {
         );
         drawText(ctx, level.chapter, sx + sz(24), sy + segH / 2 - sz(5), {
           font: font(sz(9), '800'),
-          color: completed ? '#2a8f3a' : unlocked ? '#2b6fd6' : theme.muted,
+          color: completed ? '#6ef2a0' : unlocked ? '#9ff4ff' : theme.muted,
           baseline: 'middle',
         });
         drawText(ctx, completed ? '已通关' : unlocked ? '可挑战' : '未解锁', sx + sz(24), sy + segH / 2 + sz(7), {
           font: font(sz(7.5), '500'),
-          color: completed ? '#2a8f3a' : unlocked ? '#2b6fd6' : theme.muted,
+          color: completed ? '#6ef2a0' : unlocked ? '#9ff4ff' : theme.muted,
           baseline: 'middle',
         });
       });

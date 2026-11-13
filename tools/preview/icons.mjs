@@ -41,11 +41,11 @@ const rows = Math.ceil(names.length / cols);
 const canvas = createCanvas(cols * cellW, rows * cellH + 60);
 const ctx = canvas.getContext('2d');
 
-ctx.fillStyle = '#eaf7ff';
+ctx.fillStyle = '#050a14';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
-ctx.fillStyle = '#1f4e9c';
+ctx.fillStyle = '#e8f7ff';
 ctx.font = '800 22px "Microsoft YaHei"';
-ctx.fillText('梗世界 · 果冻图标表', 24, 36);
+ctx.fillText('梗世界 · 霓虹图标表', 24, 36);
 
 names.forEach((name, index) => {
   const col = index % cols;
@@ -60,7 +60,7 @@ names.forEach((name, index) => {
   }
   drawIconTile(ctx, name, x + 15, y + 10, 100, 100);
   drawIcon(ctx, name, x + 65, y + 118, 28);
-  ctx.fillStyle = '#2b5e9b';
+  ctx.fillStyle = '#9ff4ff';
   ctx.font = '600 13px "Microsoft YaHei"';
   ctx.textAlign = 'center';
   ctx.fillText(name, x + 65, y + 142);
