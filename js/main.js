@@ -5,6 +5,7 @@ import DataBus from './databus.js';
 import { ctx, SCREEN_HEIGHT, SCREEN_WIDTH } from './render.js';
 import Background from './runtime/background.js';
 import CollectionScreen from './screens/collection-screen.js';
+import EliminatedScreen from './screens/eliminated-screen.js';
 import GameScreen from './screens/game-screen.js';
 import HomeScreen from './screens/home-screen.js';
 import LeaderboardScreen from './screens/leaderboard-screen.js';
@@ -76,6 +77,7 @@ export default class Main {
       map: new MapScreen(this),
       game: new GameScreen(this),
       storyGame: new StoryGameScreen(this),
+      eliminated: new EliminatedScreen(this),
       result: new ResultScreen(this),
       collection: new CollectionScreen(this),
       leaderboard: new LeaderboardScreen(this),

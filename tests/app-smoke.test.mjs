@@ -975,6 +975,56 @@ app.showScreen('home');
 app.render();
 assert.equal(app.screens.home.storyButton.label, '开始游戏');
 
+// ------------------------------------------------------------
+// 淘汰画面：死亡后选择不复活，先进入淘汰页，再进入结算
+// ------------------------------------------------------------
+await app.startClassicRun();
+const eliminatedGame = app.screens.game;
+let eliminatedLoops = 0;
+while (eliminatedGame.run.status !== RUN_PHASE.DEAD && eliminatedLoops < 10) {
+  const question = eliminatedGame.run.currentQuestion;
+  const wrong = question.options.find((option) => option.id !== question.answerKey);
+  await eliminatedGame.submit(wrong.id);
+  if (eliminatedGame.run.status === RUN_PHASE.DEAD) break;
+  eliminatedGame.advanceOrFinish();
+  eliminatedLoops += 1;
+}
+assert.equal(eliminatedGame.run.status, RUN_PHASE.DEAD);
+eliminatedGame.deadRevealAt = 0;
+app.profile.lastAdAt = 0;
+eliminatedGame.openReviveModal();
+app.render();
+const declineButton = eliminatedGame.modal.buttons.find((button) =>
+  String(button.label).includes('放弃复活')
+);
+assert.ok(declineButton, 'revive modal should offer decline');
+const declineX = declineButton.x + declineButton.w / 2;
+const declineY = declineButton.y + declineButton.h / 2;
+touchHandlers.start.forEach((handler) =>
+  handler({ touches: [{ clientX: declineX, clientY: declineY }] })
+);
+touchHandlers.end.forEach((handler) =>
+  handler({ touches: [], changedTouches: [{ clientX: declineX, clientY: declineY }] })
+);
+await tick(10);
+assert.equal(app.screenManager.currentName, 'eliminated', 'declining revive should open elimination screen');
+app.render();
+const eliminated = app.screens.eliminated;
+assert.ok(eliminated.layoutInfo.heroRect, 'elimination screen should have a hero');
+assertInside(eliminated.layoutInfo.heroRect, 'elimination hero');
+assertInside(eliminated.layoutInfo.buttonRect, 'elimination button');
+const reviewButton = eliminated.button;
+const reviewX = reviewButton.x + reviewButton.w / 2;
+const reviewY = reviewButton.y + reviewButton.h / 2;
+touchHandlers.start.forEach((handler) =>
+  handler({ touches: [{ clientX: reviewX, clientY: reviewY }] })
+);
+touchHandlers.end.forEach((handler) =>
+  handler({ touches: [], changedTouches: [{ clientX: reviewX, clientY: reviewY }] })
+);
+await tick(10);
+assert.equal(app.screenManager.currentName, 'result', 'elimination review should lead to result');
+
 console.log('app-smoke.test: PASS');
 console.log(
   JSON.stringify(
@@ -982,7 +1032,7 @@ console.log(
       initialCoins: 300,
       allCorrectScore: 280,
       unlocked: 10,
-      pagesRendered: ['home', 'levelIntro', 'storyGame', 'result', 'map', 'collection', 'leaderboard', 'shop', 'settings'],
+      pagesRendered: ['home', 'levelIntro', 'storyGame', 'eliminated', 'result', 'map', 'collection', 'leaderboard', 'shop', 'settings'],
       storyLevel1: true,
       storyLevel2: true,
       storyLevel3: true,
@@ -990,6 +1040,7 @@ console.log(
       levelMap: true,
       hintCoinFlow: true,
       adReviveFlow: true,
+      eliminationFlow: true,
       extendFlow: true,
       doubleFlow: true,
       snapshotResume: true,

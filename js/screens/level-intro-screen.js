@@ -12,7 +12,6 @@ import {
 } from '../services/assets.js';
 import Button from '../ui/button.js';
 import { clamp, drawText, font, wrapText } from '../ui/draw.js';
-import { renderLives } from '../ui/life-bar.js';
 import { renderStoryBubble } from '../ui/story-bubble.js';
 import BaseScreen from './base-screen.js';
 
@@ -289,19 +288,6 @@ export default class LevelIntroScreen extends BaseScreen {
             baseline: 'middle',
           });
         }
-        const heartSize = sz(6);
-        const heartGap = sz(2);
-        const heartsW = 3 * (heartSize * 1.45 + heartGap);
-        renderLives(
-          ctx,
-          heroRect.x + Math.max(0, (heroRect.w - heartsW) / 2),
-          heroRect.y - sz(8) + rise,
-          3,
-          3,
-          theme,
-          heartSize,
-          heartGap
-        );
         ctx.restore();
       }
     }

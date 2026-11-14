@@ -230,6 +230,26 @@ async function goto(screen, mode) {
       }
       app.showScreen('result', { run });
     }
+  } else if (screen === 'eliminated') {
+    await app.startClassicRun();
+    const gameScreen = app.screens.game;
+    const run = gameScreen.run;
+    let guard = 0;
+    while (run.status !== 'dead' && guard < 6) {
+      guard += 1;
+      const wrong = run.currentQuestion.options.find(
+        (option) => option.id !== run.currentQuestion.answerKey
+      );
+      await gameScreen.submit(wrong ? wrong.id : null);
+      if (run.status === 'dead') break;
+      gameScreen.advanceOrFinish();
+    }
+    gameScreen.deadRevealAt = 0;
+    app.showScreen('eliminated', {
+      run,
+      reason: 'revive_exhausted',
+      level: null,
+    });
   } else {
     app.showScreen(screen);
   }

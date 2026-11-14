@@ -51,7 +51,7 @@ export default class SettingsScreen extends BaseScreen {
 
     const definitions = [
       { key: 'sound', label: '音效', icon: 'volume', type: 'toggle', value: this.profile.settings.sound },
-      { key: 'bgm', label: '背景音乐（轻松/紧张）', icon: 'music', type: 'toggle', value: this.profile.settings.bgm },
+      { key: 'bgm', label: '背景音乐', icon: 'music', type: 'toggle', value: this.profile.settings.bgm },
       { key: 'vibration', label: '振动', icon: 'vibrate', type: 'toggle', value: this.profile.settings.vibration },
       { key: 'nickname', label: '昵称', icon: 'user', type: 'value', value: this.profile.nickname },
       { key: 'privacy', label: '隐私说明', icon: 'shield', type: 'link' },

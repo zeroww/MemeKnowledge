@@ -586,47 +586,83 @@ export default class GameScreen extends BaseScreen {
     });
     const cost = this.reviveCost();
     const canCoin = (this.profile.coins || 0) >= cost;
+    const exhausted = left <= 0;
 
     this.app.analytics.track('death_show', {
       runId: this.run.id,
       index: this.run.index,
       score: this.run.score,
       revivesUsed: this.run.revivesUsed,
+      reviveExhausted: exhausted,
     });
 
+    const buttons = exhausted
+      ? [
+          {
+            label: '接受淘汰',
+            subLabel: '查看本局成绩',
+            icon: '✕',
+            iconName: 'close',
+            style: 'danger',
+            onClick: () => this.declineRevive('revive_exhausted'),
+          },
+        ]
+      : [
+          {
+            label: '看广告复活',
+            subLabel: canAd.ok ? `剩余 ${left} 次` : '广告暂不可用',
+            icon: '❤️',
+            iconName: 'heart',
+            style: 'primary',
+            disabled: !canAd.ok || left <= 0,
+            onClick: () => this.reviveByAd(),
+          },
+          {
+            label: `花 ${cost} 梗币复活`,
+            subLabel: `当前 ${this.profile.coins} 梗币`,
+            icon: '🪙',
+            iconName: 'coin',
+            style: 'gold',
+            disabled: !canCoin || left <= 0,
+            onClick: () => this.reviveByCoin(),
+          },
+          {
+            label: '放弃复活',
+            subLabel: '进入淘汰画面',
+            icon: '✕',
+            iconName: 'close',
+            style: 'ghost',
+            onClick: () => this.declineRevive('declined'),
+          },
+        ];
+
     this.modal.show({
-      title: '你出局了',
-      message: '生命值耗尽。复活后恢复 1 条命，并重答当前题；选项会重新洗牌。',
+      title: exhausted ? '复活次数已用完' : '你出局了',
+      message: exhausted
+        ? '本局复活机会已耗尽，你被淘汰了。看看这一局的成绩吧。'
+        : '生命值耗尽。复活后恢复 1 条命，并重答当前题；选项会重新洗牌。',
       tone: 'danger',
-      icon: 'heart',
-      buttons: [
-        {
-          label: '看广告复活',
-          subLabel: canAd.ok ? `剩余 ${left} 次` : '广告暂不可用',
-          icon: '❤️',
-          iconName: 'heart',
-          style: 'primary',
-          disabled: !canAd.ok || left <= 0,
-          onClick: () => this.reviveByAd(),
-        },
-        {
-          label: `花 ${cost} 梗币复活`,
-          subLabel: `当前 ${this.profile.coins} 梗币`,
-          icon: '🪙',
-          iconName: 'coin',
-          style: 'gold',
-          disabled: !canCoin || left <= 0,
-          onClick: () => this.reviveByCoin(),
-        },
-        {
-          label: '放弃本局',
-          subLabel: '按当前分数结算',
-          icon: '✕',
-          iconName: 'close',
-          style: 'ghost',
-          onClick: () => this.abandonRun(),
-        },
-      ],
+      icon: exhausted ? '' : 'heart',
+      buttons,
+    });
+  }
+
+  declineRevive(reason = 'declined') {
+    if (!this.run) return;
+    this.modal.hide();
+    const caps = this.app.config.caps || {};
+    const left = Math.max(0, (caps.revivePerRun || 2) - (this.run.revivesUsed || 0));
+    const finalReason = left <= 0 ? 'revive_exhausted' : reason;
+    this.app.analytics.track('death_decline', {
+      runId: this.run.id,
+      index: this.run.index,
+      score: this.run.score,
+      reason: finalReason,
+    });
+    this.app.showScreen('eliminated', {
+      run: this.run,
+      reason: finalReason,
+      level: this.level || null,
     });
   }
 

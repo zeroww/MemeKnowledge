@@ -351,19 +351,6 @@ export default class StoryGameScreen extends GameScreen {
       });
     }
 
-    const heartSize = sz(7);
-    const heartGap = sz(2);
-    const heartsW = 3 * (heartSize * 1.45 + heartGap);
-    renderLives(
-      ctx,
-      heroRect.x + Math.max(0, (heroRect.w - heartsW) / 2),
-      heroRect.y - sz(8),
-      lives,
-      3,
-      theme,
-      heartSize,
-      heartGap
-    );
   }
 
   renderQuestionBubble(ctx, theme) {
